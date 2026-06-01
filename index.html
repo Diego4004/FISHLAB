@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>РИБАК — Натуральна в'ялена та копчена риба</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        // Auto-cleanup localStorage on page load
+        (function() {
+            try {
+                const testKey = '__test_' + Date.now();
+                localStorage.setItem(testKey, 'test');
+                localStorage.removeItem(testKey);
+            } catch (e) {
+                if (e.name === 'QuotaExceededError') {
+                    console.warn('localStorage переповнений, очищення...');
+                    try {
+                        // Try to clean settings
+                        const settings = JSON.parse(localStorage.getItem('storeSettings') || '{}');
+                        if (settings.logoImage) delete settings.logoImage;
+                        for (let i = 1; i <= 4; i++) {
+                            if (settings[`catImage${i}`]) delete settings[`catImage${i}`];
+                        }
+                        localStorage.setItem('storeSettings', JSON.stringify(settings));
+                    } catch (e2) {}
+                    
+                    // If still full, clear products
+                    try {
+                        const testKey2 = '__test2_' + Date.now();
+                        localStorage.setItem(testKey2, 'test');
+                        localStorage.removeItem(testKey2);
+                    } catch (e3) {
+                        localStorage.removeItem('adminProducts');
+                        localStorage.removeItem('orders');
+                    }
+                }
+            }
+        })();
+    </script>
+</head>
+<body>
+    <!-- Sticky Header -->
+    <header class="header-sticky" id="header">
+        <div class="container">
+            <div class="header-content">
+                <!-- Logo -->
+                <a href="index.html" class="logo">
+                    <div class="logo-icon">
+                        <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop" alt="РИБАК" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                    </div>
+                    <span class="logo-text" id="storeNameDisplay">РИБАК</span>
+                </a>
+                
+                <!-- Navigation -->
+                <nav class="nav-desktop">
+                    <a href="#catalog" class="nav-link">Каталог</a>
+                    <a href="#footer" class="nav-link">Контакти</a>
+                </nav>
+                
+                <!-- Actions -->
+                <div class="header-actions">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Пошук рибу...">
+                        <button class="search-btn" aria-label="Пошук">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <button class="mobile-menu-btn" id="mobileMenuBtn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <div class="mobile-menu-header">
+            <span class="logo-text">РИБАК</span>
+        </div>
+        <nav class="mobile-nav">
+            <a href="#catalog" class="mobile-nav-link">Каталог</a>
+            <a href="#footer" class="mobile-nav-link">Контакти</a>
+        </nav>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1 class="hero-title animate-fade-up" id="heroTitle">
+                        Натуральна в'ялена та копчена риба
+                    </h1>
+                    <p class="hero-subtitle animate-fade-up" id="heroSubtitle" style="animation-delay: 0.1s">
+                        Свіжа продукція напряму від виробника. Доставка по всій Україні.
+                    </p>
+                    <div class="hero-buttons animate-fade-up" style="animation-delay: 0.2s">
+                        <button class="btn btn-primary btn-large" id="heroBtn1" onclick="document.getElementById('products').scrollIntoView({behavior: 'smooth'})">
+                            Купити зараз
+                        </button>
+                        <button class="btn btn-secondary btn-large" id="heroBtn2" onclick="document.getElementById('catalog').scrollIntoView({behavior: 'smooth'})">
+                            Переглянути каталог
+                        </button>
+                    </div>
+                    <div class="hero-trust animate-fade-up" style="animation-delay: 0.3s">
+                        <div class="trust-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="heroTrust1">Натуральне сировину</span>
+                        </div>
+                        <div class="trust-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="heroTrust2">Без консервантів</span>
+                        </div>
+                        <div class="trust-item">
+                            <i class="fas fa-check-circle"></i>
+                            <span id="heroTrust3">Доставка за 24 години</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-visual animate-fade-scale" style="animation-delay: 0.2s">
+                    <div class="hero-image-wrapper">
+                        <div class="hero-image" id="heroImage" style="background-image: url('https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=800&h=800&fit=crop')"></div>
+                        <div class="hero-price-card">
+                            <span class="price-label">Від</span>
+                            <span class="price-value" id="heroPrice">890 ₴</span>
+                            <span class="price-unit">/ кг</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-scroll">
+            <i class="fas fa-chevron-down"></i>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="benefits">
+        <div class="container">
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="benefit-icon" id="benefitIcon1">
+                        <i class="fas fa-shipping-fast"></i>
+                    </div>
+                    <h3 class="benefit-title" id="benefitTitle1">Швидка доставка</h3>
+                    <p class="benefit-desc" id="benefitDesc1">Доставляємо за 24 години по всій Україні</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon" id="benefitIcon2">
+                        <i class="fas fa-fish"></i>
+                    </div>
+                    <h3 class="benefit-title" id="benefitTitle2">Свіжа риба</h3>
+                    <p class="benefit-desc" id="benefitDesc2">Тільки свіжий улов, без заморозки</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon" id="benefitIcon3">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h3 class="benefit-title" id="benefitTitle3">Найкраща якість</h3>
+                    <p class="benefit-desc" id="benefitDesc3">Преміум продукти відбірної якості</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon" id="benefitIcon4">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 class="benefit-title" id="benefitTitle4">Безпечна оплата</h3>
+                    <p class="benefit-desc" id="benefitDesc4">Готівка, картка, онлайн оплата</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories Section -->
+    <section class="categories" id="catalog">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Категорії</h2>
+                <a href="#" class="section-link" onclick="showAllProducts(); return false;">Всі товари <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="categories-grid">
+                <div class="category-card" onclick="filterCategory('В\'ялена риба')">
+                    <div class="category-image" id="catImage1" style="background-image: url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&h=400&fit=crop')"></div>
+                    <div class="category-overlay"></div>
+                    <div class="category-content">
+                        <h3 class="category-name">В'ЯЛЕНА РИБА</h3>
+                        <span class="category-count" id="catCount1">0 товарів</span>
+                        <span class="category-action">Переглянути <i class="fas fa-arrow-right"></i></span>
+                    </div>
+                </div>
+                <div class="category-card" onclick="filterCategory('Копчена риба')">
+                    <div class="category-image" id="catImage2" style="background-image: url('https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=600&h=400&fit=crop')"></div>
+                    <div class="category-overlay"></div>
+                    <div class="category-content">
+                        <h3 class="category-name">КОПЧЕНА РИБА</h3>
+                        <span class="category-count" id="catCount2">0 товарів</span>
+                        <span class="category-action">Переглянути <i class="fas fa-arrow-right"></i></span>
+                    </div>
+                </div>
+                <div class="category-card" onclick="filterCategory('Закуски')">
+                    <div class="category-image" id="catImage3" style="background-image: url('https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=600&h=400&fit=crop')"></div>
+                    <div class="category-overlay"></div>
+                    <div class="category-content">
+                        <h3 class="category-name">ЗАКУСКИ ДО ПИВА</h3>
+                        <span class="category-count" id="catCount3">0 товарів</span>
+                        <span class="category-action">Переглянути <i class="fas fa-arrow-right"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Products -->
+    <section class="products" id="products">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Хіти продажів</h2>
+                <a href="#" class="section-link">Всі товари <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="products-grid" id="productsGrid">
+                <!-- Products loaded via JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Checkout Modal -->
+    <div class="modal checkout-modal" id="checkoutModal">
+        <div class="modal-overlay" id="checkoutOverlay"></div>
+        <div class="modal-content checkout-content">
+            <div class="modal-header">
+                <h3>Оформлення замовлення</h3>
+                <button class="modal-close" id="closeCheckout">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="checkout-form" id="checkoutForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">Ім'я</label>
+                        <input type="text" id="name" required placeholder="Введіть ваше ім'я">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Телефон</label>
+                        <input type="tel" id="phone" required placeholder="+38 (XXX) XXX-XX-XX">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="address">Адреса доставки</label>
+                    <textarea id="address" required placeholder="Місто, вулиця, будинок, квартира" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="comment">Коментар (необов'язково)</label>
+                    <textarea id="comment" placeholder="Додаткова інформація" rows="2"></textarea>
+                </div>
+                <div class="checkout-summary">
+                    <p>Сума замовлення: <strong id="checkoutTotal">0 ₴</strong></p>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Підтвердити замовлення</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Product Modal -->
+    <div class="modal product-modal" id="productModal">
+        <div class="modal-overlay" id="productOverlay"></div>
+        <div class="modal-content product-content">
+            <div class="modal-header">
+                <h3 id="productModalTitle"></h3>
+            </div>
+            <div class="modal-body" id="productModalBody">
+                <!-- Product details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Modal -->
+    <div class="modal order-modal" id="orderModal">
+        <div class="modal-overlay" id="orderOverlay"></div>
+        <div class="modal-content order-content">
+            <div class="modal-header">
+                <button class="modal-close" id="closeOrder" style="position: absolute; right: 15px; top: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--gray);">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center; margin-bottom: 25px; padding: 0 20px;">
+                    <p style="font-size: 0.95rem; margin-bottom: 20px; color: var(--gray); line-height: 1.5;">Зв'яжіться з нами для замовлення:</p>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <!-- Phone -->
+                        <a href="tel:+380505338839" style="display: flex; align-items: center; justify-content: center; gap: 12px; padding: 15px; background: var(--primary-light); border-radius: 12px; text-decoration: none; color: var(--primary); font-weight: 600; transition: all 0.3s;">
+                            <i class="fas fa-phone" style="font-size: 1.3rem;"></i>
+                            <span>+38 (050) 533-88-39</span>
+                        </a>
+                        
+                        <!-- WhatsApp -->
+                        <a href="https://wa.me/380505338839" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 12px; padding: 15px; background: #25D366; border-radius: 12px; text-decoration: none; color: white; font-weight: 600; transition: all 0.3s;">
+                            <i class="fab fa-whatsapp" style="font-size: 1.3rem;"></i>
+                            <span>WhatsApp</span>
+                        </a>
+                        
+                        <!-- Email -->
+                        <a href="mailto:info@rybak.com" style="display: flex; align-items: center; justify-content: center; gap: 12px; padding: 15px; background: #EA4335; border-radius: 12px; text-decoration: none; color: white; font-weight: 600; transition: all 0.3s;">
+                            <i class="fas fa-envelope" style="font-size: 1.3rem;"></i>
+                            <span>info@rybak.com</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Modal -->
+    <div class="modal gallery-modal" id="galleryModal">
+        <div class="modal-overlay" id="galleryOverlay"></div>
+        <div class="modal-content gallery-content">
+            <div class="modal-header">
+                <h3 id="galleryTitle">Галерея товару</h3>
+                <button class="modal-close" id="closeGallery">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="gallery-body">
+                <div class="gallery-main-image">
+                    <img id="galleryMainImage" src="" alt="">
+                </div>
+                <div class="gallery-thumbnails" id="galleryThumbnails">
+                    <!-- Thumbnails will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal success-modal" id="successModal">
+        <div class="modal-overlay" id="successOverlay"></div>
+        <div class="success-content">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3>Замовлення оформлено!</h3>
+            <p>Дякуємо за покупку. Ми зв'яжемося з вами найближчим часом.</p>
+            <button class="btn btn-primary" id="closeSuccess">Закрити</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer" id="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <div class="logo-icon">
+                            <i class="fas fa-fish"></i>
+                        </div>
+                        <span class="logo-text">РИБАК</span>
+                    </div>
+                    <p class="footer-tagline" id="footerTagline">Натуральна в'ялена та копчена риба від виробника</p>
+                </div>
+                <div class="footer-column">
+                    <h4>Каталог</h4>
+                    <ul>
+                        <li><a href="#" onclick="filterCategory('В\'ялена риба'); return false;">В'ялена риба</a></li>
+                        <li><a href="#" onclick="filterCategory('Копчена риба'); return false;">Копчена риба</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Контакти</h4>
+                    <ul class="footer-contacts">
+                        <li><i class="fas fa-phone"></i> <span id="footerPhone">0800 123 456</span></li>
+                        <li><i class="fas fa-envelope"></i> <span id="footerEmail">info@rybak.ua</span></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Соціальні мережі</h4>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-telegram"></i></a>
+                        <a href="#"><i class="fab fa-viber"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p id="footerCopyright">&copy; 2026 РИБАК. Всі права захищені.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

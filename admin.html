@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Адмін панель - РИБАК</title>
+    <link rel="stylesheet" href="admin-styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Auto-cleanup localStorage on page load
+        (function() {
+            try {
+                const testKey = '__test_' + Date.now();
+                localStorage.setItem(testKey, 'test');
+                localStorage.removeItem(testKey);
+            } catch (e) {
+                if (e.name === 'QuotaExceededError') {
+                    console.warn('localStorage переповнений, очищення...');
+                    try {
+                        // Try to clean settings
+                        const settings = JSON.parse(localStorage.getItem('storeSettings') || '{}');
+                        if (settings.logoImage) delete settings.logoImage;
+                        for (let i = 1; i <= 4; i++) {
+                            if (settings[`catImage${i}`]) delete settings[`catImage${i}`];
+                        }
+                        localStorage.setItem('storeSettings', JSON.stringify(settings));
+                    } catch (e2) {}
+                    
+                    // If still full, clear products
+                    try {
+                        const testKey2 = '__test2_' + Date.now();
+                        localStorage.setItem(testKey2, 'test');
+                        localStorage.removeItem(testKey2);
+                    } catch (e3) {
+                        localStorage.removeItem('adminProducts');
+                        localStorage.removeItem('orders');
+                        alert('localStorage очищено! Перезавантажте сторінку.');
+                    }
+                }
+            }
+        })();
+    </script>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-box">
+            <div class="login-logo">
+                <div class="logo-icon">
+                    <i class="fas fa-fish"></i>
+                </div>
+                <h2>РИБАК</h2>
+                <p>Адмін панель</p>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="adminLogin">Логін</label>
+                    <input type="text" id="adminLogin" required placeholder="Введіть логін">
+                </div>
+                <div class="form-group">
+                    <label for="adminPassword">Пароль</label>
+                    <input type="password" id="adminPassword" required placeholder="Введіть пароль">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Увійти</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="admin-dashboard" style="display: none;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon">
+                    <i class="fas fa-fish"></i>
+                </div>
+                <span>РИБАК</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="active" data-tab="products">
+                    <i class="fas fa-fish"></i>
+                    <span>Товари</span>
+                </a>
+                <a href="#" data-tab="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Налаштування</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="logoutBtn" class="btn btn-logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Вийти</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="admin-header">
+                <h1>Панель керування</h1>
+                <div class="admin-header-actions">
+                    <button class="admin-header-btn" id="settingsBtn" title="Налаштування">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <div class="user-menu">
+                        <i class="fas fa-user"></i>
+                        <span id="adminNickname">Адміністратор</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Products Tab -->
+            <div id="productsTab" class="tab-content active">
+                <header class="content-header">
+                    <h1>Управління товарами</h1>
+                    <button class="btn btn-primary" id="addProductBtn">
+                        <i class="fas fa-plus"></i>
+                        Додати товар
+                    </button>
+                </header>
+                <div class="products-table-wrapper">
+                    <table class="products-table" id="productsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Фото</th>
+                                <th>Назва</th>
+                                <th>Категорія</th>
+                                <th>Ціна</th>
+                                <th>Наявність</th>
+                                <th>Дії</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody">
+                            <!-- Products will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settingsTab" class="tab-content">
+                <header class="content-header">
+                    <h1>Налаштування сайту</h1>
+                </header>
+                <div class="settings-form">
+                    <h3 style="margin-bottom: 20px; color: var(--primary);">Основні налаштування</h3>
+                    <div class="form-group">
+                        <label for="adminNicknameInput">Ваш нікнейм</label>
+                        <input type="text" id="adminNicknameInput" placeholder="Введіть ваш нікнейм">
+                    </div>
+                    <div class="form-group">
+                        <label for="storeName">Назва магазину (на сайті)</label>
+                        <input type="text" id="storeName" value="РИБАК" placeholder="Назва магазину">
+                    </div>
+                    <div class="form-group">
+                        <label for="storePhone">Телефон</label>
+                        <input type="tel" id="storePhone" value="+38 (050) 533-88-39">
+                    </div>
+                    <div class="form-group">
+                        <label for="storeEmail">Email</label>
+                        <input type="email" id="storeEmail" value="info@rybak.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="storeWhatsApp">WhatsApp (номер телефону)</label>
+                        <input type="tel" id="storeWhatsApp" value="+380505338839" placeholder="+380...">
+                    </div>
+                    <div class="form-group">
+                        <label for="logoImage">Логотип магазину</label>
+                        <div style="display: flex; gap: 15px; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <input type="file" id="logoImage" accept="image/*" style="display: block; margin-bottom: 10px;">
+                                <div id="logoPreview" style="width: 100px; height: 100px; background: #f0f0f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                    <img id="logoPreviewImg" src="" alt="Логотип" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                                    <span id="logoPlaceholder" style="color: #999;">Немає зображення</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="heroProduct">Головний товар</label>
+                        <select id="heroProduct">
+                            <!-- Products will be loaded here -->
+                        </select>
+                    </div>
+                    
+                    <hr style="margin: 30px 0; border-color: var(--gray-light);">
+                    
+                    <h3 style="margin-bottom: 20px; color: var(--primary);">Hero Section (Головний банер)</h3>
+                    <div class="form-group">
+                        <label for="heroTitle">Заголовок</label>
+                        <input type="text" id="heroTitle" value="Натуральна в'ялена та копчена риба">
+                    </div>
+                    <div class="form-group">
+                        <label for="heroSubtitle">Підзаголовок</label>
+                        <input type="text" id="heroSubtitle" value="Свіжа продукція напряму від виробника. Доставка по всій Україні.">
+                    </div>
+                    <div class="form-group">
+                        <label for="heroBtn1">Текст кнопки 1 (синя)</label>
+                        <input type="text" id="heroBtn1" value="Купити зараз">
+                    </div>
+                    <div class="form-group">
+                        <label for="heroBtn2">Текст кнопки 2 (біла)</label>
+                        <input type="text" id="heroBtn2" value="Переглянути каталог">
+                    </div>
+                    <div class="form-group">
+                        <label for="heroTrust1">Пункт довіри 1</label>
+                        <input type="text" id="heroTrust1" value="Натуральне сировину">
+                    </div>
+                    <div class="form-group">
+                        <label for="heroTrust2">Пункт довіри 2</label>
+                        <input type="text" id="heroTrust2" value="Без консервантів">
+                    </div>
+                    <div class="form-group">
+                        <label for="heroTrust3">Пункт довіри 3</label>
+                        <input type="text" id="heroTrust3" value="Доставка за 24 години">
+                    </div>
+                    
+                    <hr style="margin: 30px 0; border-color: var(--gray-light);">
+                    
+                    <h3 style="margin-bottom: 20px; color: var(--primary);">Benefits (Переваги) - Заголовки</h3>
+                    <div class="form-group">
+                        <label for="benefit1">Перевага 1</label>
+                        <input type="text" id="benefit1" value="Швидка доставка">
+                    </div>
+                    <div class="form-group">
+                        <label for="benefit2">Перевага 2</label>
+                        <input type="text" id="benefit2" value="Свіжа риба">
+                    </div>
+                    <div class="form-group">
+                        <label for="benefit3">Перевага 3</label>
+                        <input type="text" id="benefit3" value="Найкраща якість">
+                    </div>
+                    <div class="form-group">
+                        <label for="benefit4">Перевага 4</label>
+                        <input type="text" id="benefit4" value="Безпечна оплата">
+                    </div>
+                    
+                    <h3 style="margin: 30px 0 20px; color: var(--primary);">Benefits - Описи та іконки</h3>
+                    <style>
+                        .icon-select { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-top: 10px; }
+                        .icon-option { padding: 10px; text-align: center; border: 2px solid var(--gray-light); border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+                        .icon-option:hover { border-color: var(--primary); background: rgba(0,159,227,0.1); }
+                        .icon-option.selected { border-color: var(--primary); background: var(--primary); color: white; }
+                        .icon-option i { font-size: 24px; display: block; margin-bottom: 5px; }
+                        .icon-option span { font-size: 11px; }
+                        .icon-grid-small { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-top: 8px; max-height: 120px; overflow-y: auto; }
+                        .icon-btn { padding: 6px; text-align: center; border: 1px solid var(--gray-light); border-radius: 4px; cursor: pointer; background: white; }
+                        .icon-btn:hover { border-color: var(--primary); background: rgba(0,159,227,0.1); }
+                        .icon-btn.active { border-color: var(--primary); background: var(--primary); color: white; }
+                        .icon-btn i { font-size: 16px; }
+                        .desc-with-icon { display: flex; align-items: flex-start; gap: 15px; }
+                        .desc-with-icon input { flex: 1; }
+                        .selected-icon-preview { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; background: var(--primary-light); border-radius: 8px; color: var(--primary); font-size: 20px; }
+                    </style>
+                    
+                    <!-- Опис 1 з іконкою -->
+                    <div class="form-group">
+                        <label for="benefitDesc1">Опис 1</label>
+                        <div class="desc-with-icon">
+                            <div class="selected-icon-preview" id="iconPreview1">
+                                <i class="fas fa-shipping-fast"></i>
+                            </div>
+                            <input type="hidden" id="benefitIcon1" value="fa-shipping-fast">
+                            <input type="text" id="benefitDesc1" value="Доставляємо за 24 години по всій Україні" style="flex: 1;">
+                        </div>
+                        <div class="icon-grid-small" id="iconGrid1"></div>
+                    </div>
+                    
+                    <!-- Опис 2 з іконкою -->
+                    <div class="form-group">
+                        <label for="benefitDesc2">Опис 2</label>
+                        <div class="desc-with-icon">
+                            <div class="selected-icon-preview" id="iconPreview2">
+                                <i class="fas fa-fish"></i>
+                            </div>
+                            <input type="hidden" id="benefitIcon2" value="fa-fish">
+                            <input type="text" id="benefitDesc2" value="Тільки свіжий улов, без заморозки" style="flex: 1;">
+                        </div>
+                        <div class="icon-grid-small" id="iconGrid2"></div>
+                    </div>
+                    
+                    <!-- Опис 3 з іконкою -->
+                    <div class="form-group">
+                        <label for="benefitDesc3">Опис 3</label>
+                        <div class="desc-with-icon">
+                            <div class="selected-icon-preview" id="iconPreview3">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <input type="hidden" id="benefitIcon3" value="fa-star">
+                            <input type="text" id="benefitDesc3" value="Преміум продукти відбірної якості" style="flex: 1;">
+                        </div>
+                        <div class="icon-grid-small" id="iconGrid3"></div>
+                    </div>
+                    
+                    <!-- Опис 4 з іконкою -->
+                    <div class="form-group">
+                        <label for="benefitDesc4">Опис 4</label>
+                        <div class="desc-with-icon">
+                            <div class="selected-icon-preview" id="iconPreview4">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <input type="hidden" id="benefitIcon4" value="fa-shield-alt">
+                            <input type="text" id="benefitDesc4" value="Готівка, картка, онлайн оплата" style="flex: 1;">
+                        </div>
+                        <div class="icon-grid-small" id="iconGrid4"></div>
+                    </div>
+                    
+                    <hr style="margin: 30px 0; border-color: var(--gray-light);">
+                    
+                    <h3 style="margin-bottom: 20px; color: var(--primary);">Картинки категорій</h3>
+                    <style>
+                        .cat-image-upload { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+                        .cat-image-preview { width: 80px; height: 60px; border-radius: 8px; background-size: cover; background-position: center; border: 2px solid var(--gray-light); }
+                        .cat-image-input { flex: 1; }
+                        .file-input { display: none; }
+                        .file-label { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: var(--primary); color: white; border-radius: 6px; cursor: pointer; font-size: 14px; }
+                        .file-label:hover { background: var(--primary-dark); }
+                    </style>
+                    <div class="form-group">
+                        <label>В'ялена риба</label>
+                        <div class="cat-image-upload">
+                            <div class="cat-image-preview" id="catPreview1" style="background-image: url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&h=400&fit=crop')"></div>
+                            <div class="cat-image-input">
+                                <input type="file" id="catImageFile1" class="file-input" accept="image/*">
+                                <label for="catImageFile1" class="file-label"><i class="fas fa-upload"></i> Завантажити</label>
+                                <input type="hidden" id="catImage1" value="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&h=400&fit=crop">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Копчена риба</label>
+                        <div class="cat-image-upload">
+                            <div class="cat-image-preview" id="catPreview2" style="background-image: url('https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=600&h=400&fit=crop')"></div>
+                            <div class="cat-image-input">
+                                <input type="file" id="catImageFile2" class="file-input" accept="image/*">
+                                <label for="catImageFile2" class="file-label"><i class="fas fa-upload"></i> Завантажити</label>
+                                <input type="hidden" id="catImage2" value="https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=600&h=400&fit=crop">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Закуски до пива</label>
+                        <div class="cat-image-upload">
+                            <div class="cat-image-preview" id="catPreview3" style="background-image: url('https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=600&h=400&fit=crop')"></div>
+                            <div class="cat-image-input">
+                                <input type="file" id="catImageFile3" class="file-input" accept="image/*">
+                                <label for="catImageFile3" class="file-label"><i class="fas fa-upload"></i> Завантажити</label>
+                                <input type="hidden" id="catImage3" value="https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=600&h=400&fit=crop">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr style="margin: 30px 0; border-color: var(--gray-light);">
+                    
+                    <h3 style="margin-bottom: 20px; color: var(--primary);">Футер (Нижня частина сайту)</h3>
+                    <div class="form-group">
+                        <label for="footerTagline">Опис під логотипом</label>
+                        <input type="text" id="footerTagline" value="Натуральна в'ялена та копчена риба від виробника">
+                    </div>
+                    <div class="form-group">
+                        <label for="footerPhone">Телефон</label>
+                        <input type="text" id="footerPhone" value="0800 123 456">
+                    </div>
+                    <div class="form-group">
+                        <label for="footerEmail">Email</label>
+                        <input type="text" id="footerEmail" value="info@rybak.ua">
+                    </div>
+                    <div class="form-group">
+                        <label for="footerCopyright">Copyright текст</label>
+                        <input type="text" id="footerCopyright" value="© 2026 РИБАК. Всі права захищені.">
+                    </div>
+                    
+                    <hr style="margin: 30px 0; border-color: var(--gray-light);">
+                    
+                    <button class="btn btn-primary" id="saveSettings">Зберегти налаштування</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Order Detail Modal -->
+    <div id="orderModal" class="modal">
+        <div class="modal-overlay" id="orderModalOverlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Деталі замовлення</h3>
+                <button class="close-modal" id="closeOrderModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="orderDetails">
+                <!-- Order details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Edit Modal -->
+    <div id="productModal" class="modal">
+        <div class="modal-overlay" id="productModalOverlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="productModalTitle">Редагувати товар</h3>
+                <button class="close-modal" id="closeProductModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="productForm">
+                    <input type="hidden" id="productId">
+                    <div class="form-group">
+                        <label for="productName">Назва товару</label>
+                        <input type="text" id="productName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="productCategory">Категорія</label>
+                        <select id="productCategory" required>
+                            <option value="Копчена риба">Копчена риба</option>
+                            <option value="В'ялена риба">В'ялена риба</option>
+                            <option value="Закуски">Закуски</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ціна за кг (₴)</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="number" id="productPriceFrom" placeholder="Від" required min="0" style="flex: 1;">
+                            <span>-</span>
+                            <input type="number" id="productPriceTo" placeholder="До" required min="0" style="flex: 1;">
+                        </div>
+                        <small style="color: var(--gray); display: block; margin-top: 5px;">Вкажіть діапазон цін (наприклад: 180-220)</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="productDescription">Опис</label>
+                        <textarea id="productDescription" required rows="3"></textarea>
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="productInStock" checked style="width: 20px; height: 20px; cursor: pointer;">
+                        <label for="productInStock" style="margin: 0; cursor: pointer;">В наявності</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="productMainImage">Головне фото (обов'язково)</label>
+                        <input type="file" id="productMainImage" accept="image/png, image/jpeg, image/jpg" required>
+                        <small style="color: var(--gray); display: block; margin-top: 5px;">Максимальний розмір: 5MB. Це фото буде на головній сторінці.</small>
+                        <div id="mainImagePreview" style="display: none; margin-top: 10px; position: relative; width: fit-content;">
+                            <img id="mainImagePreviewImg" style="max-width: 150px; border-radius: 10px; border: 2px solid var(--primary);">
+                            <button type="button" id="removeMainImage" style="position: absolute; top: -10px; right: -10px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="productAdditionalImages">Додаткові фото (опціонально)</label>
+                        <input type="file" id="productAdditionalImages" accept="image/png, image/jpeg, image/jpg" multiple>
+                        <small style="color: var(--gray); display: block; margin-top: 5px;">Можна вибрати до 4 додаткових фото. Максимальний розмір кожного: 5MB.</small>
+                        <div id="additionalImagesPreview" style="display: none; margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Зберегти товар</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
