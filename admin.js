@@ -12,22 +12,34 @@ async function uploadImageToSupabase(base64Image, filename) {
             return null;
         }
         
-        // Convert base64 to blob
-        const response = await fetch(base64Image);
-        const blob = await response.blob();
+        // Convert base64 to blob properly
+        const arr = base64Image.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while(n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        const blob = new Blob([u8arr], { type: mime });
         
-        // Upload to Supabase Storage
+        console.log('📦 Blob created:', blob.size, 'bytes');
+        
+        // Upload to Supabase Storage using correct endpoint
         const uploadResponse = await fetch(
             `${SUPABASE_URL}/storage/v1/object/product-images/${filename}`,
             {
                 method: 'POST',
                 headers: {
                     'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': mime
                 },
                 body: blob
             }
         );
+        
+        console.log('📊 Upload response status:', uploadResponse.status);
         
         if (uploadResponse.ok) {
             // Get public URL
@@ -35,11 +47,12 @@ async function uploadImageToSupabase(base64Image, filename) {
             console.log('✅ Image uploaded:', publicUrl);
             return publicUrl;
         } else {
-            console.warn('Upload error:', uploadResponse.status);
+            const errorText = await uploadResponse.text();
+            console.warn('❌ Upload error:', uploadResponse.status, errorText);
             return null;
         }
     } catch (e) {
-        console.error('Error uploading image:', e);
+        console.error('❌ Error uploading image:', e);
         return null;
     }
 }
@@ -751,7 +764,7 @@ function setupEventHandlers() {
                     // Save new product
                     await supabaseAPI.saveProduct(productDataSupabase);
                 }
-                console.log('✅ Saved to Supabase');
+                console.log('✅ Product saved to Supabase');
                 
                 // Update products array with the Supabase version (with URLs, not base64)
                 if (productId) {
