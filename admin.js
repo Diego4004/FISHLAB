@@ -253,59 +253,87 @@ async function initializeAdminProducts() {
     console.log('✅ Products loaded from localStorage:', products.length);
 }
 
-// DOM Elements
-const loginScreen = document.getElementById('loginScreen');
-const adminDashboard = document.getElementById('adminDashboard');
-const loginForm = document.getElementById('loginForm');
-const logoutBtn = document.getElementById('logoutBtn');
-
-// Tab navigation
-const sidebarLinks = document.querySelectorAll('.sidebar-nav a');
-const tabContents = document.querySelectorAll('.tab-content');
-
-// Modals
-const orderModal = document.getElementById('orderModal');
-const productModal = document.getElementById('productModal');
-
-// Image elements
-const productMainImageInput = document.getElementById('productMainImage');
-const productAdditionalImagesInput = document.getElementById('productAdditionalImages');
-const mainImagePreview = document.getElementById('mainImagePreview');
-const mainImagePreviewImg = document.getElementById('mainImagePreviewImg');
-const additionalImagesPreview = document.getElementById('additionalImagesPreview');
+// DOM Elements - will be initialized when DOM is ready
+let loginScreen, adminDashboard, loginForm, logoutBtn;
+let sidebarLinks, tabContents;
+let orderModal, productModal;
+let productMainImageInput, productAdditionalImagesInput;
+let mainImagePreview, mainImagePreviewImg, additionalImagesPreview;
 let currentMainImageBase64 = '';
 let currentAdditionalImagesBase64 = [];
-
-// Logo image elements
-const logoImageInput = document.getElementById('logoImage');
-const logoPreviewImg = document.getElementById('logoPreviewImg');
-const logoPlaceholder = document.getElementById('logoPlaceholder');
+let logoImageInput, logoPreviewImg, logoPlaceholder;
 let currentLogoBase64 = '';
 
-// Check if already logged in
-if (localStorage.getItem('adminLoggedIn') === 'true') {
-    showDashboard();
+// Initialize DOM elements when page loads
+function initializeDOMElements() {
+    loginScreen = document.getElementById('loginScreen');
+    adminDashboard = document.getElementById('adminDashboard');
+    loginForm = document.getElementById('loginForm');
+    logoutBtn = document.getElementById('logoutBtn');
+    
+    sidebarLinks = document.querySelectorAll('.sidebar-nav a');
+    tabContents = document.querySelectorAll('.tab-content');
+    
+    orderModal = document.getElementById('orderModal');
+    productModal = document.getElementById('productModal');
+    
+    productMainImageInput = document.getElementById('productMainImage');
+    productAdditionalImagesInput = document.getElementById('productAdditionalImages');
+    mainImagePreview = document.getElementById('mainImagePreview');
+    mainImagePreviewImg = document.getElementById('mainImagePreviewImg');
+    additionalImagesPreview = document.getElementById('additionalImagesPreview');
+    
+    logoImageInput = document.getElementById('logoImage');
+    logoPreviewImg = document.getElementById('logoPreviewImg');
+    logoPlaceholder = document.getElementById('logoPlaceholder');
+    
+    console.log('✅ DOM elements initialized');
+    
+    // Check if already logged in
+    if (localStorage.getItem('adminLoggedIn') === 'true') {
+        showDashboard();
+    }
+    
+    // Login form handler
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const login = document.getElementById('adminLogin').value;
+            const password = document.getElementById('adminPassword').value;
+            
+            console.log('Login attempt:', login);
+            
+            if (checkAuth(login, password)) {
+                console.log('✅ Auth successful');
+                localStorage.setItem('adminLoggedIn', 'true');
+                showDashboard();
+            } else {
+                console.warn('❌ Auth failed');
+                alert('Невірний логін або пароль!');
+            }
+        });
+    } else {
+        console.error('❌ loginForm not found!');
+    }
+    
+    // Logout handler
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('adminLoggedIn');
+            location.reload();
+        });
+    }
+    
+    // Setup other event handlers
+    setupEventHandlers();
 }
 
-// Login form handler
-loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const login = document.getElementById('adminLogin').value;
-    const password = document.getElementById('adminPassword').value;
-    
-    if (checkAuth(login, password)) {
-        localStorage.setItem('adminLoggedIn', 'true');
-        showDashboard();
-    } else {
-        alert('Невірний логін або пароль!');
-    }
-});
-
-// Logout handler
-logoutBtn.addEventListener('click', () => {
-    localStorage.removeItem('adminLoggedIn');
-    location.reload();
-});
+// Wait for DOM to be ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeDOMElements);
+} else {
+    initializeDOMElements();
+}
 
 // Show dashboard
 async function showDashboard() {
@@ -324,83 +352,87 @@ async function showDashboard() {
     }
 }
 
-// Settings button handler
-const settingsBtn = document.getElementById('settingsBtn');
-if (settingsBtn) {
-    settingsBtn.addEventListener('click', () => {
-        // Click on settings sidebar link
-        const settingsLink = document.querySelector('[data-tab="settings"]');
-        if (settingsLink) {
-            settingsLink.click();
-        }
-    });
-}
-
-// Tab navigation
-sidebarLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const tab = link.dataset.tab;
-        
-        // Update active states
-        sidebarLinks.forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-        
-        // Show corresponding tab
-        tabContents.forEach(content => {
-            content.classList.remove('active');
+// Settings button handler - moved inside initializeDOMElements
+function setupEventHandlers() {
+    const settingsBtn = document.getElementById('settingsBtn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            // Click on settings sidebar link
+            const settingsLink = document.querySelector('[data-tab="settings"]');
+            if (settingsLink) {
+                settingsLink.click();
+            }
         });
-        document.getElementById(tab + 'Tab').classList.add('active');
-        
-        // Load data for tab
-        if (tab === 'products') {
-            loadProductsTable();
-        } else if (tab === 'fonts') {
-            // Load font settings
-            const savedFontSettings = JSON.parse(localStorage.getItem('fontSettings') || '{}');
-            if (savedFontSettings.mainFont) {
-                document.getElementById('mainFont').value = savedFontSettings.mainFont;
-            }
-            if (savedFontSettings.headingFont) {
-                document.getElementById('headingFont').value = savedFontSettings.headingFont;
-            }
-        } else if (tab === 'settings') {
-            loadHeroProductOptions();
-            // Restore all saved settings
-            const savedSettings = JSON.parse(localStorage.getItem('storeSettings') || '{}');
-            if (savedSettings.heroProduct) {
-                document.getElementById('heroProduct').value = savedSettings.heroProduct;
-            }
-            if (savedSettings.storeEmail) {
-                document.getElementById('storeEmail').value = savedSettings.storeEmail;
-            }
-            if (savedSettings.storeWhatsApp) {
-                document.getElementById('storeWhatsApp').value = savedSettings.storeWhatsApp;
-            }
-            if (savedSettings.aboutTitle) {
-                document.getElementById('aboutTitle').value = savedSettings.aboutTitle;
-            }
-            if (savedSettings.aboutItem1) {
-                document.getElementById('aboutItem1').value = savedSettings.aboutItem1;
-            }
-            if (savedSettings.aboutItem2) {
-                document.getElementById('aboutItem2').value = savedSettings.aboutItem2;
-            }
-            if (savedSettings.aboutItem3) {
-                document.getElementById('aboutItem3').value = savedSettings.aboutItem3;
-            }
-            if (savedSettings.aboutItem4) {
-                document.getElementById('aboutItem4').value = savedSettings.aboutItem4;
-            }
-            if (savedSettings.logoImage) {
-                currentLogoBase64 = savedSettings.logoImage;
-                logoPreviewImg.src = savedSettings.logoImage;
-                logoPreviewImg.style.display = 'block';
-                logoPlaceholder.style.display = 'none';
-            }
-        }
-    });
-});
+    }
+
+    // Tab navigation
+    if (sidebarLinks && sidebarLinks.length > 0) {
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tab = link.dataset.tab;
+                
+                // Update active states
+                sidebarLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                
+                // Show corresponding tab
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(tab + 'Tab').classList.add('active');
+                
+                // Load data for tab
+                if (tab === 'products') {
+                    loadProductsTable();
+                } else if (tab === 'fonts') {
+                    // Load font settings
+                    const savedFontSettings = JSON.parse(localStorage.getItem('fontSettings') || '{}');
+                    if (savedFontSettings.mainFont) {
+                        document.getElementById('mainFont').value = savedFontSettings.mainFont;
+                    }
+                    if (savedFontSettings.headingFont) {
+                        document.getElementById('headingFont').value = savedFontSettings.headingFont;
+                    }
+                } else if (tab === 'settings') {
+                    loadHeroProductOptions();
+                    // Restore all saved settings
+                    const savedSettings = JSON.parse(localStorage.getItem('storeSettings') || '{}');
+                    if (savedSettings.heroProduct) {
+                        document.getElementById('heroProduct').value = savedSettings.heroProduct;
+                    }
+                    if (savedSettings.storeEmail) {
+                        document.getElementById('storeEmail').value = savedSettings.storeEmail;
+                    }
+                    if (savedSettings.storeWhatsApp) {
+                        document.getElementById('storeWhatsApp').value = savedSettings.storeWhatsApp;
+                    }
+                    if (savedSettings.aboutTitle) {
+                        document.getElementById('aboutTitle').value = savedSettings.aboutTitle;
+                    }
+                    if (savedSettings.aboutItem1) {
+                        document.getElementById('aboutItem1').value = savedSettings.aboutItem1;
+                    }
+                    if (savedSettings.aboutItem2) {
+                        document.getElementById('aboutItem2').value = savedSettings.aboutItem2;
+                    }
+                    if (savedSettings.aboutItem3) {
+                        document.getElementById('aboutItem3').value = savedSettings.aboutItem3;
+                    }
+                    if (savedSettings.aboutItem4) {
+                        document.getElementById('aboutItem4').value = savedSettings.aboutItem4;
+                    }
+                    if (savedSettings.logoImage) {
+                        currentLogoBase64 = savedSettings.logoImage;
+                        logoPreviewImg.src = savedSettings.logoImage;
+                        logoPreviewImg.style.display = 'block';
+                        logoPlaceholder.style.display = 'none';
+                    }
+                }
+            });
+        });
+    }
+}
 
 // Delete product
 async function deleteProduct(productId) {
