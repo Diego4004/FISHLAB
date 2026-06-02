@@ -761,7 +761,7 @@ function setupEventHandlers() {
                 image: productImages[0] || '',
                 images: productImages.slice(1) || [], // Additional images as array
                 icon: '🐟',
-                inStock: document.getElementById('productInStock').checked
+                instock: document.getElementById('productInStock').checked
             };
             
             console.log('🔄 Starting product save process...');
