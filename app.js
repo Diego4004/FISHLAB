@@ -16,15 +16,15 @@ const supabaseAPI = {
                 }
             });
             if (!response.ok) {
-                console.warn('Error fetching products:', response.status);
-                return JSON.parse(localStorage.getItem('adminProducts')) || [];
+                console.error('❌ Error fetching products:', response.status);
+                return [];
             }
             const data = await response.json();
             console.log('✅ Products loaded from Supabase:', data.length);
             return data;
         } catch (e) {
-            console.warn('Error fetching products from Supabase:', e);
-            return JSON.parse(localStorage.getItem('adminProducts')) || [];
+            console.error('❌ Error fetching products from Supabase:', e);
+            return [];
         }
     },
     
@@ -38,78 +38,20 @@ const supabaseAPI = {
                 }
             });
             if (!response.ok) {
-                console.warn('Error fetching settings:', response.status);
-                return JSON.parse(localStorage.getItem('storeSettings')) || {};
+                console.error('❌ Error fetching settings:', response.status);
+                return {};
             }
             const data = await response.json();
-            console.log('✅ Settings loaded from Supabase');
-            return data.length > 0 ? data[0] : JSON.parse(localStorage.getItem('storeSettings')) || {};
+            console.log('✅ Settings loaded from Supabase:', data.length);
+            return data.length > 0 ? data[0] : {};
         } catch (e) {
-            console.warn('Error fetching settings from Supabase:', e);
-            return JSON.parse(localStorage.getItem('storeSettings')) || {};
+            console.error('❌ Error fetching settings from Supabase:', e);
+            return {};
         }
     }
 };
 
-// Auto-cleanup localStorage if quota exceeded
-function cleanupLocalStorage() {
-    try {
-        const testKey = '__test_' + Date.now();
-        localStorage.setItem(testKey, 'test');
-        localStorage.removeItem(testKey);
-    } catch (e) {
-        if (e.name === 'QuotaExceededError') {
-            console.warn('🗑️ localStorage quota exceeded, auto-cleaning...');
-            
-            // Step 1: Remove images from settings
-            try {
-                const settings = JSON.parse(localStorage.getItem('storeSettings') || '{}');
-                if (settings.logoImage) {
-                    delete settings.logoImage;
-                    console.log('🗑️ Removed logoImage');
-                }
-                for (let i = 1; i <= 4; i++) {
-                    if (settings[`catImage${i}`]) {
-                        delete settings[`catImage${i}`];
-                        console.log(`🗑️ Removed catImage${i}`);
-                    }
-                }
-                localStorage.setItem('storeSettings', JSON.stringify(settings));
-                console.log('✅ Cleaned settings');
-            } catch (e2) {
-                console.warn('Could not clean settings:', e2);
-            }
-            
-            // Step 2: Remove images from products
-            try {
-                const products = JSON.parse(localStorage.getItem('adminProducts') || '[]');
-                const cleanedProducts = products.map(p => ({
-                    ...p,
-                    image: null,  // Remove main image
-                    images: []    // Remove additional images
-                }));
-                localStorage.setItem('adminProducts', JSON.stringify(cleanedProducts));
-                console.log('✅ Removed images from products');
-            } catch (e3) {
-                console.warn('Could not clean products:', e3);
-            }
-            
-            // Step 3: If still full, clear orders
-            try {
-                const testKey2 = '__test2_' + Date.now();
-                localStorage.setItem(testKey2, 'test');
-                localStorage.removeItem(testKey2);
-            } catch (e4) {
-                console.warn('Still full, clearing orders...');
-                localStorage.removeItem('orders');
-                console.log('✅ Cleared orders');
-            }
-        }
-    }
-}
-
-// Run cleanup on page load
-cleanupLocalStorage();
+// No localStorage cleanup needed - all data in Supabase!
 
 // Products data - ціни в UAH
 // Empty by default - products will be loaded from Supabase
@@ -121,21 +63,15 @@ let products = [];
 // Initialize products on page load
 async function initializeProducts() {
     try {
-        // Try to load from Supabase first
+        // Load from Supabase ONLY
         const supabaseProducts = await supabaseAPI.getProducts();
-        if (supabaseProducts && supabaseProducts.length > 0) {
-            products = supabaseProducts;
-            console.log('✅ Products loaded from Supabase:', products.length);
-        } else {
-            // Fallback to localStorage
-            products = JSON.parse(localStorage.getItem('adminProducts')) || defaultProducts;
-            console.log('✅ Products loaded from localStorage:', products.length);
-        }
+        products = supabaseProducts && supabaseProducts.length > 0 ? supabaseProducts : [];
+        console.log('✅ Products loaded from Supabase:', products.length);
         renderProducts();
         updateCategoryCounts();
     } catch (e) {
-        console.warn('Error initializing products:', e);
-        products = JSON.parse(localStorage.getItem('adminProducts')) || defaultProducts;
+        console.error('❌ Error initializing products:', e);
+        products = [];
         renderProducts();
     }
 }
@@ -1290,9 +1226,7 @@ if ('BroadcastChannel' in window) {
             loadFontSettings();
         }
         if (e.data.type === 'products') {
-            products = JSON.parse(localStorage.getItem('adminProducts')) || defaultProducts;
-            updateCategoryCounts();
-            renderProducts();
+            initializeProducts();
         }
     });
 }
@@ -1300,39 +1234,19 @@ if ('BroadcastChannel' in window) {
 // Update when page becomes visible (user returns from admin panel)
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
+        initializeProducts();
         loadSettings();
         loadFontSettings();
-        products = JSON.parse(localStorage.getItem('adminProducts')) || defaultProducts;
-        updateCategoryCounts();
-        renderProducts();
     }
 });
 
-// Periodically check for updates (fallback for same-tab updates)
+// Periodically reload from Supabase (no localStorage)
 let lastSettingsJSON = '';
 setInterval(() => {
-    const storedProducts = JSON.parse(localStorage.getItem('adminProducts'));
-    const storedSettings = JSON.parse(localStorage.getItem('storeSettings') || '{}');
-    const storedFontSettings = JSON.parse(localStorage.getItem('fontSettings') || '{}');
-    const currentSettingsJSON = JSON.stringify(storedSettings);
-    
-    // Check if products changed
-    if (storedProducts && JSON.stringify(storedProducts) !== JSON.stringify(products)) {
-        products = storedProducts;
-        renderProducts();
-    }
-    
-    // Check if settings changed
-    if (currentSettingsJSON !== lastSettingsJSON) {
-        console.log('Settings changed, updating...');
-        lastSettingsJSON = currentSettingsJSON;
-        loadSettings();
-        updateAboutSection();
-    }
-    
-    // Load font settings
+    // Reload settings from Supabase
+    loadSettings();
     loadFontSettings();
-}, 1000);
+}, 5000);
 
 // Initialize app on page load
 document.addEventListener('DOMContentLoaded', () => {

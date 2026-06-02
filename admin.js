@@ -178,8 +178,9 @@ const supabaseAPI = {
     
     async saveSettings(settings) {
         try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/settings`, {
-                method: 'POST',
+            // Use PATCH to update existing settings (ID=1)
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/settings?id=eq.1`, {
+                method: 'PATCH',
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Authorization': `Bearer ${SUPABASE_KEY}`,
@@ -187,14 +188,17 @@ const supabaseAPI = {
                 },
                 body: JSON.stringify(settings)
             });
+            console.log('📊 Settings save response status:', response.status);
             if (!response.ok) {
-                console.warn('Error saving settings:', response.status);
+                const errorText = await response.text();
+                console.error('❌ Error saving settings:', response.status);
+                console.error('📋 Error details:', errorText);
                 return null;
             }
             console.log('✅ Settings saved to Supabase');
             return true;
         } catch (e) {
-            console.warn('Error saving settings to Supabase:', e);
+            console.error('❌ Error saving settings to Supabase:', e);
             return null;
         }
     }
