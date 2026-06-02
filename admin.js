@@ -25,14 +25,13 @@ async function uploadImageToSupabase(base64Image, filename) {
         
         console.log('📦 Blob created:', blob.size, 'bytes');
         
-        // Upload to Supabase Storage using correct endpoint
+        // Upload to Supabase Storage using PUT method
         const uploadResponse = await fetch(
             `${SUPABASE_URL}/storage/v1/object/product-images/${filename}`,
             {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
                     'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
                     'Content-Type': mime
                 },
                 body: blob
@@ -41,7 +40,7 @@ async function uploadImageToSupabase(base64Image, filename) {
         
         console.log('📊 Upload response status:', uploadResponse.status);
         
-        if (uploadResponse.ok) {
+        if (uploadResponse.ok || uploadResponse.status === 200) {
             // Get public URL
             const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/product-images/${filename}`;
             console.log('✅ Image uploaded:', publicUrl);
@@ -814,7 +813,7 @@ function setupEventHandlers() {
                 additionalImagesPreview.style.display = 'none';
                 currentMainImageBase64 = '';
                 currentAdditionalImagesBase64 = [];
-                productMainImageInput.required = true;
+                productMainImageInput.required = false;
                 
                 productModal.classList.remove('active');
                 loadProductsTable();
@@ -838,7 +837,7 @@ function setupEventHandlers() {
             additionalImagesPreview.style.display = 'none';
             currentMainImageBase64 = '';
             currentAdditionalImagesBase64 = [];
-            productMainImageInput.required = true;
+            productMainImageInput.required = false;
         });
     }
     

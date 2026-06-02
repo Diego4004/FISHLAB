@@ -112,104 +112,8 @@ function cleanupLocalStorage() {
 cleanupLocalStorage();
 
 // Products data - ціни в UAH
-const defaultProducts = [
-    {
-        id: 1,
-        name: 'Копчений лосось',
-        category: 'Копчена риба',
-        description: 'Ніжне філе лосося холодного копчення, преміум якість',
-        priceFrom: 890,
-        priceTo: 950,
-        price: 890,
-        image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=400&h=300&fit=crop',
-        icon: '🐟',
-        inStock: true
-    },
-    {
-        id: 2,
-        name: 'Сушена вобла',
-        category: 'В\'ялена риба',
-        description: "Класична в'ялена вобла до пива, натуральна",
-        priceFrom: 180,
-        priceTo: 220,
-        price: 180,
-        image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=300&fit=crop',
-        icon: '🐠',
-        inStock: true
-    },
-    {
-        id: 3,
-        name: 'Копчена скумбрія',
-        category: 'Копчена риба',
-        description: 'Жирна скумбрія гарячого копчення, сочна та смачна',
-        priceFrom: 420,
-        priceTo: 480,
-        price: 420,
-        image: 'https://images.unsplash.com/photo-1534947376037-85699269c2a8?w=400&h=300&fit=crop',
-        icon: '🐟',
-        inStock: true
-    },
-    {
-        id: 4,
-        name: 'Сушений кальмар',
-        category: 'Закуски',
-        description: 'Сушений кальмар соломкою, хрустка закуска до пива',
-        priceFrom: 320,
-        priceTo: 380,
-        price: 320,
-        image: 'https://images.unsplash.com/photo-1559737558-2f5a35f4523b?w=400&h=300&fit=crop',
-        icon: '🦑',
-        inStock: true
-    },
-    {
-        id: 5,
-        name: 'Копчена форель',
-        category: 'Копчена риба',
-        description: 'Форель холодного копчення, філе, ніжна та ароматна',
-        priceFrom: 560,
-        priceTo: 620,
-        price: 560,
-        image: 'https://images.unsplash.com/photo-1599084993091-1a80155dd2a8?w=400&h=300&fit=crop',
-        icon: '🐟',
-        inStock: true
-    },
-    {
-        id: 6,
-        name: "Вобла в'ялена",
-        category: 'В\'ялена риба',
-        description: "Тушки вобли в'яленої, відбірної якості, без добавок",
-        priceFrom: 340,
-        priceTo: 400,
-        price: 340,
-        image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=300&fit=crop',
-        icon: '🐠',
-        inStock: true
-    },
-    {
-        id: 7,
-        name: 'Креветки сушені',
-        category: 'Закуски',
-        description: 'Сушені креветки - смачна та поживна закуска',
-        priceFrom: 260,
-        priceTo: 320,
-        price: 260,
-        image: 'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47?w=400&h=300&fit=crop',
-        icon: '🦐',
-        inStock: true
-    },
-    {
-        id: 8,
-        name: 'Омуль копчений',
-        category: 'Копчена риба',
-        description: 'Байкальський омуль холодного копчення, преміум',
-        priceFrom: 980,
-        priceTo: 1050,
-        price: 980,
-        image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=400&h=300&fit=crop',
-        icon: '🐟',
-        inStock: true
-    }
-];
+// Empty by default - products will be loaded from Supabase
+const defaultProducts = [];
 
 // Load products from Supabase or localStorage
 let products = [];
@@ -1140,17 +1044,16 @@ async function loadSettings() {
         if (storeNameDisplay) storeNameDisplay.textContent = settings.storeName;
     }
     
-    // Logo image
-    if (settings.logoImage) {
-        const logoImg = document.querySelector('.logo-icon img');
-        if (logoImg) {
-            logoImg.src = settings.logoImage;
-            console.log('✓ Updated logo image:', settings.logoImage.substring(0, 50) + '...');
-        } else {
-            console.warn('⚠ Logo image element not found');
-        }
+    // Logo image - set default if not configured
+    const defaultLogoUrl = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop';
+    const logoUrl = (settings.logoImage && settings.logoImage.trim()) ? settings.logoImage : defaultLogoUrl;
+    
+    const logoImg = document.querySelector('.logo-icon img');
+    if (logoImg) {
+        logoImg.src = logoUrl;
+        console.log('✓ Updated logo image');
     } else {
-        console.warn('⚠ settings.logoImage is empty');
+        console.warn('⚠ Logo image element not found');
     }
     
     // Hero section
