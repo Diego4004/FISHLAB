@@ -32,6 +32,7 @@ async function uploadImageToSupabase(base64Image, filename) {
                 method: 'PUT',
                 headers: {
                     'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
                     'Content-Type': mime
                 },
                 body: blob
@@ -698,27 +699,9 @@ function setupEventHandlers() {
                 inStock: document.getElementById('productInStock').checked
             };
             
-            // Local version with all images (for local storage)
-            const productData = {
-                ...productDataSupabase,
-                images: productImages
-            };
+            console.log('🔄 Starting product save process...');
             
-            if (productId) {
-                // Update existing
-                const index = products.findIndex(p => p.id === parseInt(productId));
-                if (index > -1) {
-                    productData.icon = products[index].icon;
-                    products[index] = productData;
-                }
-            } else {
-                // Add new
-                products.push(productData);
-            }
-            
-            console.log('Saving product:', productDataSupabase);
-            
-            // Save to Supabase and localStorage with error handling
+            // STEP 1: Upload images FIRST (before saving to database)
             try {
                 // Upload main image if it's base64
                 if (currentMainImageBase64 && currentMainImageBase64.startsWith('data:image')) {
@@ -730,6 +713,9 @@ function setupEventHandlers() {
                     );
                     if (mainImageUrl) {
                         productDataSupabase.image = mainImageUrl;
+                        console.log('✅ Main image uploaded:', mainImageUrl);
+                    } else {
+                        console.warn('⚠️ Main image upload failed, continuing without image');
                     }
                 }
                 
@@ -745,7 +731,10 @@ function setupEventHandlers() {
                                 img,
                                 `product-${productDataSupabase.id}-img-${i}-${timestamp}`
                             );
-                            if (imgUrl) uploadedImages.push(imgUrl);
+                            if (imgUrl) {
+                                uploadedImages.push(imgUrl);
+                                console.log(`✅ Additional image ${i} uploaded`);
+                            }
                         } else {
                             uploadedImages.push(img); // Already a URL
                         }
@@ -754,26 +743,32 @@ function setupEventHandlers() {
                         productDataSupabase.images = uploadedImages;
                     }
                 }
-                
-                // Save to Supabase
+            } catch (e) {
+                console.error('❌ Error uploading images:', e);
+            }
+            
+            // STEP 2: Save to Supabase AFTER images are uploaded
+            try {
+                console.log('💾 Saving product to Supabase:', productDataSupabase);
                 if (productId) {
                     // Update existing product
                     await supabaseAPI.updateProduct(parseInt(productId), productDataSupabase);
+                    console.log('✅ Product updated in Supabase');
                 } else {
                     // Save new product
                     await supabaseAPI.saveProduct(productDataSupabase);
+                    console.log('✅ Product saved to Supabase');
                 }
-                console.log('✅ Product saved to Supabase');
                 
-                // Update products array with the Supabase version (with URLs, not base64)
+                // STEP 3: Update local products array AFTER Supabase save succeeds
                 if (productId) {
                     const index = products.findIndex(p => p.id === parseInt(productId));
                     if (index > -1) {
                         products[index] = productDataSupabase;
                     }
                 } else {
-                    // Replace the last added product with Supabase version
-                    products[products.length - 1] = productDataSupabase;
+                    // Add new product to array
+                    products.push(productDataSupabase);
                 }
                 
                 const productsJSON = JSON.stringify(products);
