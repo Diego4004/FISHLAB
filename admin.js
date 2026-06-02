@@ -754,8 +754,7 @@ function setupEventHandlers() {
                 ...(productId && { id: newId }), // Only include ID if updating
                 name: document.getElementById('productName').value,
                 category: document.getElementById('productCategory').value,
-                priceFrom: priceFrom,
-                priceTo: priceTo,
+                priceto: priceTo,
                 price: priceFrom,
                 description: document.getElementById('productDescription').value,
                 image: productImages[0] || '',
