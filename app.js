@@ -966,142 +966,39 @@ async function updateCategoryCounts() {
 
 // Load settings from admin panel
 async function loadSettings() {
-    // Always load from localStorage first (admin panel saves here)
-    const localSettings = JSON.parse(localStorage.getItem('storeSettings') || '{}');
-    const settings = Object.keys(localSettings).length > 0 ? localSettings : await supabaseAPI.getSettings();
+    // Load from Supabase ONLY
+    const settings = await supabaseAPI.getSettings();
     
-    console.log('Settings loaded:', settings);
-    console.log('footerTagline in settings:', settings.footerTagline);
-    console.log('footerPhone in settings:', settings.footerPhone);
+    console.log('Settings loaded from Supabase:', settings);
     
     // Store name
-    if (settings.storeName !== undefined) {
+    if (settings.store_name !== undefined) {
         const storeNameDisplay = document.getElementById('storeNameDisplay');
-        if (storeNameDisplay) storeNameDisplay.textContent = settings.storeName;
+        if (storeNameDisplay) storeNameDisplay.textContent = settings.store_name;
     }
     
     // Logo image - set default if not configured
     const defaultLogoUrl = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop';
-    const logoUrl = (settings.logoImage && settings.logoImage.trim()) ? settings.logoImage : defaultLogoUrl;
+    const logoUrl = (settings.logo_image && settings.logo_image.trim()) ? settings.logo_image : defaultLogoUrl;
     
     const logoImg = document.querySelector('.logo-icon img');
     if (logoImg) {
         logoImg.src = logoUrl;
-        console.log('✓ Updated logo image');
+        console.log('✓ Updated logo image:', logoUrl);
     } else {
         console.warn('⚠ Logo image element not found');
     }
     
     // Hero section
-    if (settings.heroTitle !== undefined) {
+    if (settings.hero_title !== undefined) {
         const heroTitle = document.getElementById('heroTitle');
-        if (heroTitle) heroTitle.textContent = settings.heroTitle;
+        if (heroTitle) heroTitle.textContent = settings.hero_title;
     }
-    if (settings.heroSubtitle !== undefined) {
+    if (settings.hero_subtitle !== undefined) {
         const heroSubtitle = document.getElementById('heroSubtitle');
-        if (heroSubtitle) heroSubtitle.textContent = settings.heroSubtitle;
+        if (heroSubtitle) heroSubtitle.textContent = settings.hero_subtitle;
     }
-    if (settings.heroBtn1 !== undefined) {
-        const heroBtn1 = document.getElementById('heroBtn1');
-        if (heroBtn1) heroBtn1.textContent = settings.heroBtn1;
-    }
-    if (settings.heroBtn2 !== undefined) {
-        const heroBtn2 = document.getElementById('heroBtn2');
-        if (heroBtn2) heroBtn2.textContent = settings.heroBtn2;
-    }
-    if (settings.heroTrust1 !== undefined) {
-        const heroTrust1 = document.getElementById('heroTrust1');
-        if (heroTrust1) heroTrust1.textContent = settings.heroTrust1;
-    }
-    if (settings.heroTrust2 !== undefined) {
-        const heroTrust2 = document.getElementById('heroTrust2');
-        if (heroTrust2) heroTrust2.textContent = settings.heroTrust2;
-    }
-    if (settings.heroTrust3 !== undefined) {
-        const heroTrust3 = document.getElementById('heroTrust3');
-        if (heroTrust3) heroTrust3.textContent = settings.heroTrust3;
-    }
-    
-    // Benefits section
-    for (let i = 1; i <= 4; i++) {
-        // Benefit titles
-        if (settings[`benefit${i}`] !== undefined) {
-            const titleEl = document.getElementById(`benefitTitle${i}`);
-            if (titleEl) titleEl.textContent = settings[`benefit${i}`];
-        }
-        // Benefit descriptions
-        if (settings[`benefitDesc${i}`] !== undefined) {
-            const descEl = document.getElementById(`benefitDesc${i}`);
-            if (descEl) descEl.textContent = settings[`benefitDesc${i}`];
-        }
-        // Benefit icons
-        if (settings[`benefitIcon${i}`] !== undefined && settings[`benefitIcon${i}`]) {
-            const iconEl = document.getElementById(`benefitIcon${i}`);
-            if (iconEl) {
-                const newIcon = settings[`benefitIcon${i}`];
-                iconEl.innerHTML = `<i class="fas ${newIcon}"></i>`;
-                console.log(`✓ Updated benefitIcon${i} to: ${newIcon}`);
-            } else {
-                console.warn(`⚠ benefitIcon${i} element not found`);
-            }
-        }
-    }
-    
-    // Category images
-    for (let i = 1; i <= 3; i++) {
-        if (settings[`catImage${i}`] !== undefined && settings[`catImage${i}`]) {
-            const imgEl = document.getElementById(`catImage${i}`);
-            if (imgEl) {
-                imgEl.style.backgroundImage = `url('${settings[`catImage${i}`]}')`;
-                console.log(`✓ Updated catImage${i}:`, settings[`catImage${i}`]);
-            }
-        }
-    }
-    
-    // Footer settings
-    console.log('Processing footer settings...');
-    console.log('footerTagline value:', settings.footerTagline, 'exists:', settings.footerTagline !== undefined);
-    console.log('footerPhone value:', settings.footerPhone, 'exists:', settings.footerPhone !== undefined);
-    console.log('footerEmail value:', settings.footerEmail, 'exists:', settings.footerEmail !== undefined);
-    
-    if (settings.footerTagline !== undefined) {
-        const footerTagline = document.getElementById('footerTagline');
-        console.log('footerTagline element:', footerTagline);
-        if (footerTagline) {
-            footerTagline.textContent = settings.footerTagline;
-            console.log('✓ Updated footerTagline:', settings.footerTagline);
-        } else {
-            console.error('✗ footerTagline element NOT FOUND in DOM');
-        }
-    }
-    if (settings.footerPhone !== undefined) {
-        const footerPhone = document.getElementById('footerPhone');
-        console.log('footerPhone element:', footerPhone);
-        if (footerPhone) {
-            footerPhone.textContent = settings.footerPhone;
-            console.log('✓ Updated footerPhone:', settings.footerPhone);
-        } else {
-            console.error('✗ footerPhone element NOT FOUND in DOM');
-        }
-    }
-    if (settings.footerEmail !== undefined) {
-        const footerEmail = document.getElementById('footerEmail');
-        if (footerEmail) {
-            footerEmail.textContent = settings.footerEmail;
-            console.log('✓ Updated footerEmail:', settings.footerEmail);
-        } else {
-            console.error('✗ footerEmail element NOT FOUND');
-        }
-    }
-    if (settings.footerCopyright !== undefined) {
-        const footerCopyright = document.getElementById('footerCopyright');
-        if (footerCopyright) {
-            footerCopyright.textContent = settings.footerCopyright;
-            console.log('✓ Updated footerCopyright:', settings.footerCopyright);
-        } else {
-            console.error('✗ footerCopyright element NOT FOUND');
-        }
-    }
+    // All other settings are not in Supabase table, so skip them
     
     // Update hero product (for price, image, etc.)
     updateHeroProduct();
@@ -1132,33 +1029,15 @@ function showNotification(message) {
     }, 2000);
 }
 
-// Load font settings
+// Load font settings - fonts are not in Supabase, so skip
 function loadFontSettings() {
-    const fontSettings = JSON.parse(localStorage.getItem('fontSettings') || '{}');
-    console.log('Loading font settings:', fontSettings);
-    
-    if (fontSettings.mainFont) {
-        document.body.style.setProperty('font-family', fontSettings.mainFont + ', sans-serif', 'important');
-        console.log('Applied main font:', fontSettings.mainFont);
-    }
-    if (fontSettings.headingFont) {
-        const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6, .logo-text');
-        headings.forEach(h => {
-            h.style.setProperty('font-family', fontSettings.headingFont + ', sans-serif', 'important');
-        });
-        console.log('Applied heading font:', fontSettings.headingFont);
-    }
+    // Font settings not implemented in Supabase yet
+    console.log('Font settings loading skipped');
 }
 
 // Load settings on page load - ensure DOM is ready
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM loaded, initializing...');
-    
-    // Check localStorage
-    const storeSettings = localStorage.getItem('storeSettings');
-    const fontSettings = localStorage.getItem('fontSettings');
-    console.log('localStorage storeSettings:', storeSettings ? 'found' : 'not found');
-    console.log('localStorage fontSettings:', fontSettings ? 'found' : 'not found');
     
     await loadSettings();
     loadFontSettings();
@@ -1169,13 +1048,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Manual refresh button handler
     const refreshBtn = document.getElementById('refreshSettingsBtn');
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => {
+        refreshBtn.addEventListener('click', async () => {
             console.log('Manual refresh triggered');
-            loadSettings();
+            await loadSettings();
             loadFontSettings();
-            products = JSON.parse(localStorage.getItem('adminProducts')) || defaultProducts;
-            updateCategoryCounts();
-            renderProducts();
+            await initializeProducts();
+            await updateCategoryCounts();
+            await renderProducts();
             
             // Show notification
             const notification = document.createElement('div');
@@ -1198,21 +1077,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// Update when localStorage changes (from admin panel)
-window.addEventListener('storage', (e) => {
-    console.log('Storage event:', e.key);
-    if (e.key === 'adminProducts') {
-        products = JSON.parse(localStorage.getItem('adminProducts')) || defaultProducts;
-        updateCategoryCounts();
-        renderProducts();
-    }
-    if (e.key === 'storeSettings') {
-        loadSettings();
-    }
-    if (e.key === 'fontSettings') {
-        loadFontSettings();
-    }
-});
+// Storage events not needed - all data from Supabase
 
 // BroadcastChannel for same-tab communication (if supported)
 if ('BroadcastChannel' in window) {
