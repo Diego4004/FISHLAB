@@ -759,8 +759,9 @@ function setupEventHandlers() {
                 price: priceFrom,
                 description: document.getElementById('productDescription').value,
                 image: productImages[0] || '',
+                images: productImages.slice(1) || [], // Additional images as array
                 icon: '🐟',
-                in_stock: document.getElementById('productInStock').checked
+                inStock: document.getElementById('productInStock').checked
             };
             
             console.log('🔄 Starting product save process...');
