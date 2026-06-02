@@ -218,39 +218,37 @@ const checkAuth = (login, pass) => login === _auth.l && pass === _auth.p;
 // Products array - will be loaded from Supabase or localStorage
 let products = [];
 
-// Initialize products from Supabase or localStorage
+// Initialize products from localStorage
 async function initializeAdminProducts() {
     try {
-        // Try to load from Supabase first
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*`, {
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json'
-            }
-        });
+        // Load from localStorage
+        const stored = localStorage.getItem('adminProducts');
+        console.log('� Loading products from localStorage...');
         
-        if (response.ok) {
-            const supabaseProducts = await response.json();
-            if (supabaseProducts && supabaseProducts.length > 0) {
-                products = supabaseProducts;
-                console.log('✅ Products loaded from Supabase:', products.length);
-                // Save to localStorage as backup
-                try {
-                    localStorage.setItem('adminProducts', JSON.stringify(products));
-                } catch (e) {
-                    console.warn('localStorage full');
-                }
-                return;
-            }
+        if (stored) {
+            products = JSON.parse(stored);
+            console.log('✅ Products loaded from localStorage:', products.length);
+        } else {
+            products = [];
+            console.log('⚠️ No products in localStorage');
         }
     } catch (e) {
-        console.warn('Error loading from Supabase:', e);
+        console.error('❌ Error loading products:', e);
+        products = [];
     }
     
-    // Fallback to localStorage
-    products = JSON.parse(localStorage.getItem('adminProducts')) || [];
-    console.log('✅ Products loaded from localStorage:', products.length);
+    // Setup BroadcastChannel for real-time sync between tabs
+    if ('BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('products_channel');
+        bc.onmessage = (event) => {
+            if (event.data.type === 'products_updated') {
+                console.log('🔄 Products updated from another tab');
+                products = event.data.products;
+                loadProductsTable();
+            }
+        };
+        window.productsBroadcastChannel = bc;
+    }
 }
 
 // DOM Elements - will be initialized when DOM is ready
@@ -664,9 +662,12 @@ function setupEventHandlers() {
                 console.log('✅ Saved to IndexedDB');
                 
                 // Notify other tabs via BroadcastChannel
-                if ('BroadcastChannel' in window) {
-                    const bc = new BroadcastChannel('settings_channel');
-                    bc.postMessage({ type: 'products' });
+                if (window.productsBroadcastChannel) {
+                    window.productsBroadcastChannel.postMessage({ 
+                        type: 'products_updated',
+                        products: products
+                    });
+                    console.log('📢 Notified other tabs about product update');
                 }
                 
                 // Reset form
@@ -728,17 +729,13 @@ async function deleteProduct(productId) {
     }
     
     try {
-        // Delete from Supabase
-        await supabaseAPI.deleteProduct(productId);
-        console.log('✅ Product deleted from Supabase');
-        
         // Remove from local array
         products = products.filter(p => p.id !== productId);
         
         // Save to localStorage
         try {
             localStorage.setItem('adminProducts', JSON.stringify(products));
-            console.log('✅ Saved to localStorage');
+            console.log('✅ Product deleted and saved to localStorage');
         } catch (e) {
             console.warn('localStorage full');
         }
@@ -751,9 +748,12 @@ async function deleteProduct(productId) {
         loadProductsTable();
         
         // Notify other tabs
-        if ('BroadcastChannel' in window) {
-            const bc = new BroadcastChannel('settings_channel');
-            bc.postMessage({ type: 'products' });
+        if (window.productsBroadcastChannel) {
+            window.productsBroadcastChannel.postMessage({ 
+                type: 'products_updated',
+                products: products
+            });
+            console.log('📢 Notified other tabs about product deletion');
         }
         
         alert('Товар видалено!');
