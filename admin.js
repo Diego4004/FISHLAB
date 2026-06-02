@@ -753,15 +753,31 @@ function setupEventHandlers() {
                 }
                 console.log('✅ Saved to Supabase');
                 
+                // Update products array with the Supabase version (with URLs, not base64)
+                if (productId) {
+                    const index = products.findIndex(p => p.id === parseInt(productId));
+                    if (index > -1) {
+                        products[index] = productDataSupabase;
+                    }
+                } else {
+                    // Replace the last added product with Supabase version
+                    products[products.length - 1] = productDataSupabase;
+                }
+                
                 const productsJSON = JSON.stringify(products);
                 console.log('Products size:', productsJSON.length, 'bytes');
                 
-                // Also save to localStorage as backup
-                try {
-                    localStorage.setItem('adminProducts', productsJSON);
-                    console.log('✅ Saved to localStorage');
-                } catch (e) {
-                    console.warn('localStorage full, using Supabase only');
+                // Save to localStorage as backup only if small enough
+                // Skip if Supabase save was successful (we have URLs now)
+                if (productsJSON.length < 1000000) { // Less than 1MB
+                    try {
+                        localStorage.setItem('adminProducts', productsJSON);
+                        console.log('✅ Saved to localStorage');
+                    } catch (e) {
+                        console.warn('localStorage full, skipping backup');
+                    }
+                } else {
+                    console.log('⚠️ Products too large for localStorage, using Supabase only');
                 }
                 
                 // Also save to IndexedDB (for large data)
