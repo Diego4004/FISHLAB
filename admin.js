@@ -836,18 +836,8 @@ function setupEventHandlers() {
                 const productsJSON = JSON.stringify(products);
                 console.log('Products size:', productsJSON.length, 'bytes');
                 
-                // Save to localStorage as backup only if small enough
-                // Skip if Supabase save was successful (we have URLs now)
-                if (productsJSON.length < 1000000) { // Less than 1MB
-                    try {
-                        localStorage.setItem('adminProducts', productsJSON);
-                        console.log('✅ Saved to localStorage');
-                    } catch (e) {
-                        console.warn('localStorage full, skipping backup');
-                    }
-                } else {
-                    console.log('⚠️ Products too large for localStorage, using Supabase only');
-                }
+                // Don't save to localStorage - only Supabase!
+                console.log('✅ Products saved to Supabase only');
                 
                 // Also save to IndexedDB (for large data) - optional, don't block on error
                 try {
@@ -1050,7 +1040,7 @@ function deleteProduct(productId) {
     const index = products.findIndex(p => p.id === productId);
     if (index > -1) {
         products.splice(index, 1);
-        localStorage.setItem('adminProducts', JSON.stringify(products));
+        // Don't save to localStorage - only Supabase!
         
         // Notify other tabs via BroadcastChannel
         if ('BroadcastChannel' in window) {
@@ -1120,13 +1110,11 @@ if (saveSettingsBtn) {
             delete settingsToSave.logoImage;
         }
         
-        // Save to Supabase
+        // Save to Supabase ONLY - no localStorage!
         await supabaseAPI.saveSettings(settingsToSave);
         console.log('✅ Settings saved to Supabase');
         
         const finalJSON = JSON.stringify(settingsToSave);
-        localStorage.setItem('storeSettings', finalJSON);
-        console.log('✅ Settings saved to localStorage');
         console.log('Settings size:', finalJSON.length, 'bytes');
         
         // Notify other tabs via BroadcastChannel
