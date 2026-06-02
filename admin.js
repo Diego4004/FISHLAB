@@ -82,7 +82,14 @@ async function uploadImageToSupabase(base64Image, filename) {
             return publicUrl;
         } else {
             const errorText = await uploadResponse.text();
-            console.warn('❌ Upload error:', uploadResponse.status, errorText);
+            console.error('❌ Upload error:', uploadResponse.status);
+            console.error('📋 Error details:', errorText);
+            console.error('📋 Filename:', filename);
+            console.error('📋 Blob size:', blob.size);
+            try {
+                const errorJson = JSON.parse(errorText);
+                console.error('📋 Error JSON:', errorJson);
+            } catch (e) {}
             return null;
         }
     } catch (e) {
@@ -95,6 +102,7 @@ async function uploadImageToSupabase(base64Image, filename) {
 const supabaseAPI = {
     async saveProduct(product) {
         try {
+            console.log('📤 Sending product to Supabase:', product);
             const response = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
                 method: 'POST',
                 headers: {
@@ -104,15 +112,22 @@ const supabaseAPI = {
                 },
                 body: JSON.stringify(product)
             });
+            console.log('📊 Save response status:', response.status);
             if (!response.ok) {
-                console.warn('Error saving product:', response.status);
+                const errorText = await response.text();
+                console.error('❌ Error saving product:', response.status);
+                console.error('📋 Error details:', errorText);
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    console.error('📋 Error JSON:', errorJson);
+                } catch (e) {}
                 return null;
             }
             const data = await response.json();
-            console.log('✅ Product saved to Supabase');
+            console.log('✅ Product saved to Supabase:', data);
             return data[0];
         } catch (e) {
-            console.warn('Error saving product to Supabase:', e);
+            console.error('❌ Error saving product to Supabase:', e);
             return null;
         }
     },
@@ -729,8 +744,10 @@ function setupEventHandlers() {
                 newId = maxId + 1;
             }
             
+            // For new products, don't include ID (let Supabase auto-generate)
+            // For updates, include ID
             const productDataSupabase = {
-                id: newId,
+                ...(productId && { id: newId }), // Only include ID if updating
                 name: document.getElementById('productName').value,
                 category: document.getElementById('productCategory').value,
                 priceFrom: priceFrom,
