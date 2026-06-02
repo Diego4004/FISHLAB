@@ -218,24 +218,50 @@ const checkAuth = (login, pass) => login === _auth.l && pass === _auth.p;
 // Products array - will be loaded from Supabase or localStorage
 let products = [];
 
-// Initialize products from localStorage
+// Initialize products from Supabase or localStorage
 async function initializeAdminProducts() {
     try {
-        // Load from localStorage
-        const stored = localStorage.getItem('adminProducts');
-        console.log('� Loading products from localStorage...');
+        // Try to load from Supabase first
+        console.log('🔄 Loading products from Supabase...');
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
         
-        if (stored) {
-            products = JSON.parse(stored);
-            console.log('✅ Products loaded from localStorage:', products.length);
+        console.log('📊 Supabase response status:', response.status);
+        
+        if (response.ok) {
+            const supabaseProducts = await response.json();
+            console.log('📦 Supabase products:', supabaseProducts);
+            
+            if (supabaseProducts && supabaseProducts.length > 0) {
+                products = supabaseProducts;
+                console.log('✅ Products loaded from Supabase:', products.length);
+                // Save to localStorage as backup
+                try {
+                    localStorage.setItem('adminProducts', JSON.stringify(products));
+                } catch (e) {
+                    console.warn('localStorage full');
+                }
+                return;
+            } else {
+                console.log('⚠️ Supabase returned empty array');
+            }
         } else {
-            products = [];
-            console.log('⚠️ No products in localStorage');
+            console.warn('❌ Supabase error:', response.status, response.statusText);
         }
     } catch (e) {
-        console.error('❌ Error loading products:', e);
-        products = [];
+        console.warn('❌ Error loading from Supabase:', e);
     }
+    
+    // Fallback to localStorage
+    const stored = localStorage.getItem('adminProducts');
+    console.log('💾 localStorage adminProducts:', stored ? stored.substring(0, 100) + '...' : 'empty');
+    products = stored ? JSON.parse(stored) : [];
+    console.log('✅ Products loaded from localStorage:', products.length);
     
     // Setup BroadcastChannel for real-time sync between tabs
     if ('BroadcastChannel' in window) {
