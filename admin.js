@@ -756,7 +756,7 @@ function setupEventHandlers() {
                 description: document.getElementById('productDescription').value,
                 image: productImages[0] || '',
                 icon: '🐟',
-                inStock: document.getElementById('productInStock').checked
+                in_stock: document.getElementById('productInStock').checked
             };
             
             console.log('🔄 Starting product save process...');
