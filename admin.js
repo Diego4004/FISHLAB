@@ -1062,46 +1062,17 @@ function deleteProduct(productId) {
 const saveSettingsBtn = document.getElementById('saveSettings');
 if (saveSettingsBtn) {
     saveSettingsBtn.addEventListener('click', async () => {
-    // Save admin nickname
-    const adminNickname = document.getElementById('adminNicknameInput').value;
-    if (adminNickname) {
-        localStorage.setItem('adminNickname', adminNickname);
-        document.getElementById('adminNickname').textContent = adminNickname;
-    }
+    // Admin nickname is local only (not saved to Supabase)
     
+    // Only save fields that exist in Supabase settings table
     const settings = {
-        storeName: document.getElementById('storeName').value,
-        storePhone: document.getElementById('storePhone').value,
-        heroProduct: parseInt(document.getElementById('heroProduct').value),
-        heroTitle: document.getElementById('heroTitle').value,
-        heroSubtitle: document.getElementById('heroSubtitle').value,
-        heroBtn1: document.getElementById('heroBtn1').value,
-        heroBtn2: document.getElementById('heroBtn2').value,
-        heroTrust1: document.getElementById('heroTrust1').value,
-        heroTrust2: document.getElementById('heroTrust2').value,
-        heroTrust3: document.getElementById('heroTrust3').value,
-        benefit1: document.getElementById('benefit1').value,
-        benefit2: document.getElementById('benefit2').value,
-        benefit3: document.getElementById('benefit3').value,
-        benefit4: document.getElementById('benefit4').value,
-        benefitDesc1: document.getElementById('benefitDesc1').value,
-        benefitDesc2: document.getElementById('benefitDesc2').value,
-        benefitDesc3: document.getElementById('benefitDesc3').value,
-        benefitDesc4: document.getElementById('benefitDesc4').value,
-        benefitIcon1: document.getElementById('benefitIcon1').value || 'fa-shipping-fast',
-        benefitIcon2: document.getElementById('benefitIcon2').value || 'fa-fish',
-        benefitIcon3: document.getElementById('benefitIcon3').value || 'fa-star',
-        benefitIcon4: document.getElementById('benefitIcon4').value || 'fa-shield-alt',
-        catImage1: document.getElementById('catImage1').value,
-        catImage2: document.getElementById('catImage2').value,
-        catImage3: document.getElementById('catImage3').value,
-        footerTagline: document.getElementById('footerTagline').value,
-        footerPhone: document.getElementById('footerPhone').value,
-        footerEmail: document.getElementById('footerEmail').value,
-        footerCopyright: document.getElementById('footerCopyright').value,
-        logoImage: currentLogoBase64,
-        storeEmail: document.getElementById('storeEmail').value,
-        storeWhatsApp: document.getElementById('storeWhatsApp').value
+        store_name: document.getElementById('storeName').value,
+        store_phone: document.getElementById('storePhone').value,
+        store_email: document.getElementById('storeEmail').value,
+        store_whatsapp: document.getElementById('storeWhatsApp').value,
+        hero_title: document.getElementById('heroTitle').value,
+        hero_subtitle: document.getElementById('heroSubtitle').value,
+        logo_image: currentLogoBase64
     };
     
     try {
@@ -1216,120 +1187,9 @@ for (let i = 1; i <= 3; i++) {
     }
 }
 
-// Load settings on page load
-const savedSettings = JSON.parse(localStorage.getItem('storeSettings') || '{}');
-if (savedSettings.storeName) {
-    const el = document.getElementById('storeName');
-    if (el) el.value = savedSettings.storeName;
-}
-if (savedSettings.storePhone) {
-    const el = document.getElementById('storePhone');
-    if (el) el.value = savedSettings.storePhone;
-}
-if (savedSettings.heroTitle) {
-    const el = document.getElementById('heroTitle');
-    if (el) el.value = savedSettings.heroTitle;
-}
-if (savedSettings.heroSubtitle) {
-    const el = document.getElementById('heroSubtitle');
-    if (el) el.value = savedSettings.heroSubtitle;
-}
-if (savedSettings.benefit1) {
-    const el = document.getElementById('benefit1');
-    if (el) el.value = savedSettings.benefit1;
-}
-if (savedSettings.benefit2) {
-    const el = document.getElementById('benefit2');
-    if (el) el.value = savedSettings.benefit2;
-}
-if (savedSettings.benefit3) {
-    const el = document.getElementById('benefit3');
-    if (el) el.value = savedSettings.benefit3;
-}
-if (savedSettings.benefit4) {
-    const el = document.getElementById('benefit4');
-    if (el) el.value = savedSettings.benefit4;
-}
-
-// Hero buttons & trust
-if (savedSettings.heroBtn1) {
-    const el = document.getElementById('heroBtn1');
-    if (el) el.value = savedSettings.heroBtn1;
-}
-if (savedSettings.heroBtn2) {
-    const el = document.getElementById('heroBtn2');
-    if (el) el.value = savedSettings.heroBtn2;
-}
-if (savedSettings.heroTrust1) {
-    const el = document.getElementById('heroTrust1');
-    if (el) el.value = savedSettings.heroTrust1;
-}
-if (savedSettings.heroTrust2) {
-    const el = document.getElementById('heroTrust2');
-    if (el) el.value = savedSettings.heroTrust2;
-}
-if (savedSettings.heroTrust3) {
-    const el = document.getElementById('heroTrust3');
-    if (el) el.value = savedSettings.heroTrust3;
-}
-
-// Benefit descriptions
-if (savedSettings.benefitDesc1) {
-    const el = document.getElementById('benefitDesc1');
-    if (el) el.value = savedSettings.benefitDesc1;
-}
-if (savedSettings.benefitDesc2) {
-    const el = document.getElementById('benefitDesc2');
-    if (el) el.value = savedSettings.benefitDesc2;
-}
-if (savedSettings.benefitDesc3) {
-    const el = document.getElementById('benefitDesc3');
-    if (el) el.value = savedSettings.benefitDesc3;
-}
-if (savedSettings.benefitDesc4) {
-    const el = document.getElementById('benefitDesc4');
-    if (el) el.value = savedSettings.benefitDesc4;
-}
-
-// Benefit icons - update hidden inputs and preview icons
-for (let i = 1; i <= 4; i++) {
-    if (savedSettings[`benefitIcon${i}`]) {
-        const iconInput = document.getElementById(`benefitIcon${i}`);
-        const iconPreview = document.getElementById(`iconPreview${i}`);
-        if (iconInput) iconInput.value = savedSettings[`benefitIcon${i}`];
-        if (iconPreview) iconPreview.innerHTML = `<i class="fas ${savedSettings[`benefitIcon${i}`]}"></i>`;
-    }
-}
-
-// Category images - update hidden inputs and previews
-for (let i = 1; i <= 3; i++) {
-    if (savedSettings[`catImage${i}`]) {
-        const hiddenInput = document.getElementById(`catImage${i}`);
-        const preview = document.getElementById(`catPreview${i}`);
-        if (hiddenInput) hiddenInput.value = savedSettings[`catImage${i}`];
-        if (preview) preview.style.backgroundImage = `url('${savedSettings[`catImage${i}`]}')`;
-    }
-}
-
-// Footer settings - use !== undefined to allow empty strings
-if (savedSettings.footerTagline !== undefined) {
-    document.getElementById('footerTagline').value = savedSettings.footerTagline;
-}
-if (savedSettings.footerPhone !== undefined) {
-    document.getElementById('footerPhone').value = savedSettings.footerPhone;
-}
-if (savedSettings.footerEmail !== undefined) {
-    document.getElementById('footerEmail').value = savedSettings.footerEmail;
-}
-if (savedSettings.footerCopyright !== undefined) {
-    document.getElementById('footerCopyright').value = savedSettings.footerCopyright;
-}
-
-// Load hero product options first, then set value
-loadHeroProductOptions();
-if (savedSettings.heroProduct) {
-    document.getElementById('heroProduct').value = savedSettings.heroProduct;
-}
+// Load settings on page load - only fields that exist in Supabase
+// Settings are loaded from Supabase via app.js, not localStorage
+// This is just for reference - actual loading happens in app.js
 
 // Helper functions
 function formatPrice(price) {
