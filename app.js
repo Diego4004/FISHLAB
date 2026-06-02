@@ -2,7 +2,7 @@ console.log('🚀 APP.JS LOADED');
 
 // Supabase Configuration
 const SUPABASE_URL = 'https://rxcgyreenwlfhqpvbsfh.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4Y2d5cmVlbndsZmhxcHZic2ZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMjI0NTksImV4cCI6MjA5NTg5ODQ1OX0.UsbpDbWzhQ5fC5ZJBYzXu7wY2OCI4U4SgUipWv8gxWY';
+const SUPABASE_KEY = 'sb_publishable_Le8tl8h2Bj0xRMeQLvtaOQ_h15hB2LZ';
 
 // Supabase API helper
 const supabaseAPI = {

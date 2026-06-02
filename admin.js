@@ -2,7 +2,7 @@
 
 // Supabase Configuration
 const SUPABASE_URL = 'https://rxcgyreenwlfhqpvbsfh.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4Y2d5cmVlbndsZmhxcHZic2ZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMjI0NTksImV4cCI6MjA5NTg5ODQ1OX0.UsbpDbWzhQ5fC5ZJBYzXu7wY2OCI4U4SgUipWv8gxWY';
+const SUPABASE_KEY = 'sb_publishable_Le8tl8h2Bj0xRMeQLvtaOQ_h15hB2LZ';
 
 // Upload image to Supabase Storage and get public URL
 async function uploadImageToSupabase(base64Image, filename) {
@@ -25,14 +25,13 @@ async function uploadImageToSupabase(base64Image, filename) {
         
         console.log('📦 Blob created:', blob.size, 'bytes');
         
-        // Upload to Supabase Storage using PUT method
+        // Upload to Supabase Storage using POST method with upsert
         const uploadResponse = await fetch(
-            `${SUPABASE_URL}/storage/v1/object/product-images/${filename}`,
+            `${SUPABASE_URL}/storage/v1/object/product-images/${filename}?upsert=true`,
             {
-                method: 'PUT',
+                method: 'POST',
                 headers: {
                     'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
                     'Content-Type': mime
                 },
                 body: blob
