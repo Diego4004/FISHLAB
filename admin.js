@@ -432,6 +432,293 @@ function setupEventHandlers() {
             });
         });
     }
+    
+    // Add product button
+    const addProductBtn = document.getElementById('addProductBtn');
+    if (addProductBtn) {
+        addProductBtn.addEventListener('click', () => {
+            document.getElementById('productModalTitle').textContent = 'Додати товар';
+            document.getElementById('productForm').reset();
+            document.getElementById('productId').value = '';
+            mainImagePreview.style.display = 'none';
+            mainImagePreviewImg.src = '';
+            additionalImagesPreview.innerHTML = '';
+            additionalImagesPreview.style.display = 'none';
+            currentMainImageBase64 = '';
+            currentAdditionalImagesBase64 = [];
+            productMainImageInput.required = true;
+            productModal.classList.add('active');
+        });
+    }
+    
+    // Main image preview handler
+    if (productMainImageInput) {
+        productMainImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Файл занадто великий! Максимальний розмір 5MB');
+                    this.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentMainImageBase64 = e.target.result;
+                    mainImagePreviewImg.src = e.target.result;
+                    mainImagePreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Remove main image handler
+    const removeMainImageBtn = document.getElementById('removeMainImage');
+    if (removeMainImageBtn) {
+        removeMainImageBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentMainImageBase64 = '';
+            productMainImageInput.value = '';
+            mainImagePreview.style.display = 'none';
+            mainImagePreviewImg.src = '';
+        });
+    }
+    
+    // Additional images preview handler
+    if (productAdditionalImagesInput) {
+        productAdditionalImagesInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            currentAdditionalImagesBase64 = [];
+            additionalImagesPreview.innerHTML = '';
+            
+            if (files.length > 4) {
+                alert('Максимум 4 додаткових фото! Вибрано: ' + files.length);
+                this.value = '';
+                return;
+            }
+            
+            files.forEach((file, index) => {
+                if (file.size > 5 * 1024 * 1024) {
+                    alert(`Файл ${file.name} занадто великий! Максимальний розмір 5MB`);
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentAdditionalImagesBase64.push(e.target.result);
+                    
+                    const container = document.createElement('div');
+                    container.style.cssText = 'position: relative; width: fit-content;';
+                    
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.cssText = 'width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid var(--primary);';
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.type = 'button';
+                    removeBtn.style.cssText = 'position: absolute; top: -10px; right: -10px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;';
+                    removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    removeBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const idx = currentAdditionalImagesBase64.indexOf(e.target.result);
+                        if (idx > -1) {
+                            currentAdditionalImagesBase64.splice(idx, 1);
+                        }
+                        container.remove();
+                        if (currentAdditionalImagesBase64.length === 0) {
+                            additionalImagesPreview.style.display = 'none';
+                            productAdditionalImagesInput.value = '';
+                        }
+                    });
+                    
+                    container.appendChild(img);
+                    container.appendChild(removeBtn);
+                    additionalImagesPreview.appendChild(container);
+                    additionalImagesPreview.style.display = 'flex';
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+    }
+    
+    // Logo image preview handler
+    if (logoImageInput) {
+        logoImageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Файл занадто великий! Максимальний розмір 5MB');
+                    this.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentLogoBase64 = e.target.result;
+                    logoPreviewImg.src = e.target.result;
+                    logoPreviewImg.style.display = 'block';
+                    logoPlaceholder.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+    
+    // Product form handler
+    const productForm = document.getElementById('productForm');
+    if (productForm) {
+        productForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log('Form submit triggered');
+            
+            const productId = document.getElementById('productId').value;
+            console.log('Product ID:', productId);
+            console.log('Current main image:', currentMainImageBase64 ? 'Set' : 'Not set');
+            
+            // Check if main image is selected (for new products)
+            if (!productId && !currentMainImageBase64) {
+                alert('Будь ласка, виберіть головне фото товару!');
+                return;
+            }
+            
+            // Get existing product for images if editing and no new images selected
+            const existingProduct = productId ? products.find(p => p.id === parseInt(productId)) : null;
+            
+            // Build images array: main image + additional images
+            let productImages = [];
+            
+            if (currentMainImageBase64) {
+                productImages.push(currentMainImageBase64);
+            }
+            
+            if (currentAdditionalImagesBase64.length > 0) {
+                productImages.push(...currentAdditionalImagesBase64);
+            }
+            
+            // If editing and no new images selected, keep existing
+            if (productId && productImages.length === 0 && existingProduct) {
+                if (existingProduct.images && existingProduct.images.length > 0) {
+                    productImages = existingProduct.images;
+                } else if (existingProduct.image) {
+                    productImages = [existingProduct.image];
+                }
+            }
+            
+            const priceFrom = parseInt(document.getElementById('productPriceFrom').value);
+            const priceTo = parseInt(document.getElementById('productPriceTo').value);
+            
+            const productData = {
+                id: productId ? parseInt(productId) : Math.max(...products.map(p => p.id), 0) + 1,
+                name: document.getElementById('productName').value,
+                category: document.getElementById('productCategory').value,
+                priceFrom: priceFrom,
+                priceTo: priceTo,
+                price: priceFrom,
+                description: document.getElementById('productDescription').value,
+                images: productImages,
+                image: productImages[0] || '',
+                icon: '🐟',
+                inStock: document.getElementById('productInStock').checked
+            };
+            
+            if (productId) {
+                // Update existing
+                const index = products.findIndex(p => p.id === parseInt(productId));
+                if (index > -1) {
+                    productData.icon = products[index].icon;
+                    products[index] = productData;
+                }
+            } else {
+                // Add new
+                products.push(productData);
+            }
+            
+            console.log('Saving product:', productData);
+            
+            // Save to Supabase and localStorage with error handling
+            try {
+                // Save to Supabase
+                if (productId) {
+                    // Update existing product
+                    await supabaseAPI.updateProduct(parseInt(productId), productData);
+                } else {
+                    // Save new product
+                    await supabaseAPI.saveProduct(productData);
+                }
+                console.log('✅ Saved to Supabase');
+                
+                const productsJSON = JSON.stringify(products);
+                console.log('Products size:', productsJSON.length, 'bytes');
+                
+                // Also save to localStorage as backup
+                try {
+                    localStorage.setItem('adminProducts', productsJSON);
+                    console.log('✅ Saved to localStorage');
+                } catch (e) {
+                    console.warn('localStorage full, using Supabase only');
+                }
+                
+                // Also save to IndexedDB (for large data)
+                await saveProductsToIndexedDB(products);
+                console.log('✅ Saved to IndexedDB');
+                
+                // Notify other tabs via BroadcastChannel
+                if ('BroadcastChannel' in window) {
+                    const bc = new BroadcastChannel('settings_channel');
+                    bc.postMessage({ type: 'products' });
+                }
+                
+                // Reset form
+                document.getElementById('productForm').reset();
+                mainImagePreview.style.display = 'none';
+                mainImagePreviewImg.src = '';
+                additionalImagesPreview.innerHTML = '';
+                additionalImagesPreview.style.display = 'none';
+                currentMainImageBase64 = '';
+                currentAdditionalImagesBase64 = [];
+                productMainImageInput.required = true;
+                
+                productModal.classList.remove('active');
+                loadProductsTable();
+                alert('Товар збережено!');
+            } catch (e) {
+                console.error('Failed to save product:', e);
+                alert('Помилка збереження товару: ' + e.message + '\n\nСпробуйте видалити деякі товари або очистити браузер.');
+            }
+        });
+    }
+    
+    // Close product modal
+    const productModalOverlay = document.getElementById('productModalOverlay');
+    if (productModalOverlay) {
+        productModalOverlay.addEventListener('click', () => {
+            productModal.classList.remove('active');
+            // Reset preview
+            mainImagePreview.style.display = 'none';
+            mainImagePreviewImg.src = '';
+            additionalImagesPreview.innerHTML = '';
+            additionalImagesPreview.style.display = 'none';
+            currentMainImageBase64 = '';
+            currentAdditionalImagesBase64 = [];
+            productMainImageInput.required = true;
+        });
+    }
+    
+    const closeProductModal = document.getElementById('closeProductModal');
+    if (closeProductModal) {
+        closeProductModal.addEventListener('click', () => {
+            productModal.classList.remove('active');
+            // Reset preview
+            mainImagePreview.style.display = 'none';
+            mainImagePreviewImg.src = '';
+            additionalImagesPreview.innerHTML = '';
+            additionalImagesPreview.style.display = 'none';
+            currentMainImageBase64 = '';
+            currentAdditionalImagesBase64 = [];
+            productMainImageInput.required = true;
+        });
+    }
 }
 
 // Delete product
@@ -511,135 +798,6 @@ function loadProductsTable() {
     `).join('');
 }
 
-// Add product button
-document.getElementById('addProductBtn').addEventListener('click', () => {
-    document.getElementById('productModalTitle').textContent = 'Додати товар';
-    document.getElementById('productForm').reset();
-    document.getElementById('productId').value = '';
-    mainImagePreview.style.display = 'none';
-    mainImagePreviewImg.src = '';
-    additionalImagesPreview.innerHTML = '';
-    additionalImagesPreview.style.display = 'none';
-    currentMainImageBase64 = '';
-    currentAdditionalImagesBase64 = [];
-    productMainImageInput.required = true;
-    productModal.classList.add('active');
-});
-
-// Main image preview handler
-if (productMainImageInput) {
-    productMainImageInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                alert('Файл занадто великий! Максимальний розмір 5MB');
-                this.value = '';
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                currentMainImageBase64 = e.target.result;
-                mainImagePreviewImg.src = e.target.result;
-                mainImagePreview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-}
-
-// Remove main image handler
-const removeMainImageBtn = document.getElementById('removeMainImage');
-if (removeMainImageBtn) {
-    removeMainImageBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        currentMainImageBase64 = '';
-        productMainImageInput.value = '';
-        mainImagePreview.style.display = 'none';
-        mainImagePreviewImg.src = '';
-    });
-}
-
-// Additional images preview handler
-if (productAdditionalImagesInput) {
-    productAdditionalImagesInput.addEventListener('change', function(e) {
-        const files = Array.from(e.target.files);
-        currentAdditionalImagesBase64 = [];
-        additionalImagesPreview.innerHTML = '';
-        
-        if (files.length > 4) {
-            alert('Максимум 4 додаткових фото! Вибрано: ' + files.length);
-            this.value = '';
-            return;
-        }
-        
-        files.forEach((file, index) => {
-            if (file.size > 5 * 1024 * 1024) {
-                alert(`Файл ${file.name} занадто великий! Максимальний розмір 5MB`);
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                currentAdditionalImagesBase64.push(e.target.result);
-                
-                const container = document.createElement('div');
-                container.style.cssText = 'position: relative; width: fit-content;';
-                
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.style.cssText = 'width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid var(--primary);';
-                
-                const removeBtn = document.createElement('button');
-                removeBtn.type = 'button';
-                removeBtn.style.cssText = 'position: absolute; top: -10px; right: -10px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;';
-                removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-                removeBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const idx = currentAdditionalImagesBase64.indexOf(e.target.result);
-                    if (idx > -1) {
-                        currentAdditionalImagesBase64.splice(idx, 1);
-                    }
-                    container.remove();
-                    if (currentAdditionalImagesBase64.length === 0) {
-                        additionalImagesPreview.style.display = 'none';
-                        productAdditionalImagesInput.value = '';
-                    }
-                });
-                
-                container.appendChild(img);
-                container.appendChild(removeBtn);
-                additionalImagesPreview.appendChild(container);
-                additionalImagesPreview.style.display = 'flex';
-            };
-            reader.readAsDataURL(file);
-        });
-    });
-}
-
-// Logo image preview handler
-if (logoImageInput) {
-    logoImageInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                alert('Файл занадто великий! Максимальний розмір 5MB');
-                this.value = '';
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                currentLogoBase64 = e.target.result;
-                logoPreviewImg.src = e.target.result;
-                logoPreviewImg.style.display = 'block';
-                logoPlaceholder.style.display = 'none';
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-}
-
 // Edit product
 function editProduct(productId) {
     const product = products.find(p => p.id === productId);
@@ -709,154 +867,10 @@ function deleteProduct(productId) {
     }
 }
 
-// Product form handler
-document.getElementById('productForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    console.log('Form submit triggered');
-    
-    const productId = document.getElementById('productId').value;
-    console.log('Product ID:', productId);
-    console.log('Current main image:', currentMainImageBase64 ? 'Set' : 'Not set');
-    
-    // Check if main image is selected (for new products)
-    if (!productId && !currentMainImageBase64) {
-        alert('Будь ласка, виберіть головне фото товару!');
-        return;
-    }
-    
-    // Get existing product for images if editing and no new images selected
-    const existingProduct = productId ? products.find(p => p.id === parseInt(productId)) : null;
-    
-    // Build images array: main image + additional images
-    let productImages = [];
-    
-    if (currentMainImageBase64) {
-        productImages.push(currentMainImageBase64);
-    }
-    
-    if (currentAdditionalImagesBase64.length > 0) {
-        productImages.push(...currentAdditionalImagesBase64);
-    }
-    
-    // If editing and no new images selected, keep existing
-    if (productId && productImages.length === 0 && existingProduct) {
-        if (existingProduct.images && existingProduct.images.length > 0) {
-            productImages = existingProduct.images;
-        } else if (existingProduct.image) {
-            productImages = [existingProduct.image];
-        }
-    }
-    
-    const priceFrom = parseInt(document.getElementById('productPriceFrom').value);
-    const priceTo = parseInt(document.getElementById('productPriceTo').value);
-    
-    const productData = {
-        id: productId ? parseInt(productId) : Math.max(...products.map(p => p.id), 0) + 1,
-        name: document.getElementById('productName').value,
-        category: document.getElementById('productCategory').value,
-        priceFrom: priceFrom,
-        priceTo: priceTo,
-        price: priceFrom, // Для совместимости с существующим кодом
-        description: document.getElementById('productDescription').value,
-        images: productImages,
-        image: productImages[0] || '', // First image as main for compatibility
-        icon: '🐟',
-        inStock: document.getElementById('productInStock').checked
-    };
-    
-    if (productId) {
-        // Update existing
-        const index = products.findIndex(p => p.id === parseInt(productId));
-        if (index > -1) {
-            productData.icon = products[index].icon;
-            products[index] = productData;
-        }
-    } else {
-        // Add new
-        products.push(productData);
-    }
-    
-    console.log('Saving product:', productData);
-    
-    // Save to Supabase and localStorage with error handling
-    try {
-        // Save to Supabase
-        if (productId) {
-            // Update existing product
-            await supabaseAPI.updateProduct(parseInt(productId), productData);
-        } else {
-            // Save new product
-            await supabaseAPI.saveProduct(productData);
-        }
-        console.log('✅ Saved to Supabase');
-        
-        const productsJSON = JSON.stringify(products);
-        console.log('Products size:', productsJSON.length, 'bytes');
-        
-        // Also save to localStorage as backup
-        try {
-            localStorage.setItem('adminProducts', productsJSON);
-            console.log('✅ Saved to localStorage');
-        } catch (e) {
-            console.warn('localStorage full, using Supabase only');
-        }
-        
-        // Also save to IndexedDB (for large data)
-        await saveProductsToIndexedDB(products);
-        console.log('✅ Saved to IndexedDB');
-        
-        // Notify other tabs via BroadcastChannel
-        if ('BroadcastChannel' in window) {
-            const bc = new BroadcastChannel('settings_channel');
-            bc.postMessage({ type: 'products' });
-        }
-        
-        // Reset form
-        document.getElementById('productForm').reset();
-        mainImagePreview.style.display = 'none';
-        mainImagePreviewImg.src = '';
-        additionalImagesPreview.innerHTML = '';
-        additionalImagesPreview.style.display = 'none';
-        currentMainImageBase64 = '';
-        currentAdditionalImagesBase64 = [];
-        productMainImageInput.required = true;
-        
-        productModal.classList.remove('active');
-        loadProductsTable();
-        alert('Товар збережено!');
-    } catch (e) {
-        console.error('Failed to save product:', e);
-        alert('Помилка збереження товару: ' + e.message + '\n\nСпробуйте видалити деякі товари або очистити браузер.');
-    }
-});
-
-// Close product modal
-document.getElementById('productModalOverlay').addEventListener('click', () => {
-    productModal.classList.remove('active');
-    // Reset preview
-    mainImagePreview.style.display = 'none';
-    mainImagePreviewImg.src = '';
-    additionalImagesPreview.innerHTML = '';
-    additionalImagesPreview.style.display = 'none';
-    currentMainImageBase64 = '';
-    currentAdditionalImagesBase64 = [];
-    productMainImageInput.required = true;
-});
-
-document.getElementById('closeProductModal').addEventListener('click', () => {
-    productModal.classList.remove('active');
-    // Reset preview
-    mainImagePreview.style.display = 'none';
-    mainImagePreviewImg.src = '';
-    additionalImagesPreview.innerHTML = '';
-    additionalImagesPreview.style.display = 'none';
-    currentMainImageBase64 = '';
-    currentAdditionalImagesBase64 = [];
-    productMainImageInput.required = true;
-});
-
 // Settings
-document.getElementById('saveSettings').addEventListener('click', async () => {
+const saveSettingsBtn = document.getElementById('saveSettings');
+if (saveSettingsBtn) {
+    saveSettingsBtn.addEventListener('click', async () => {
     // Save admin nickname
     const adminNickname = document.getElementById('adminNicknameInput').value;
     if (adminNickname) {
@@ -953,7 +967,8 @@ document.getElementById('saveSettings').addEventListener('click', async () => {
             alert('Помилка збереження: ' + e.message);
         }
     }
-});
+    });
+}
 
 // Fonts settings
 document.getElementById('saveFonts')?.addEventListener('click', () => {
