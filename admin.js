@@ -4,6 +4,37 @@
 const SUPABASE_URL = 'https://rxcgyreenwlfhqpvbsfh.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Le8tl8h2Bj0xRMeQLvtaOQ_h15hB2LZ';
 
+// Compress image before upload
+async function compressImage(base64Image) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            
+            // Resize if too large
+            const maxWidth = 1200;
+            const maxHeight = 1200;
+            if (width > maxWidth || height > maxHeight) {
+                const ratio = Math.min(maxWidth / width, maxHeight / height);
+                width *= ratio;
+                height *= ratio;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Compress to JPEG with quality 0.7
+            const compressed = canvas.toDataURL('image/jpeg', 0.7);
+            resolve(compressed);
+        };
+        img.src = base64Image;
+    });
+}
+
 // Upload image to Supabase Storage and get public URL
 async function uploadImageToSupabase(base64Image, filename) {
     try {
@@ -12,8 +43,12 @@ async function uploadImageToSupabase(base64Image, filename) {
             return null;
         }
         
+        // Compress image first
+        console.log('🖼️ Compressing image...');
+        const compressedImage = await compressImage(base64Image);
+        
         // Convert base64 to blob properly
-        const arr = base64Image.split(',');
+        const arr = compressedImage.split(',');
         const mime = arr[0].match(/:(.*?);/)[1];
         const bstr = atob(arr[1]);
         let n = bstr.length;
@@ -23,7 +58,7 @@ async function uploadImageToSupabase(base64Image, filename) {
         }
         const blob = new Blob([u8arr], { type: mime });
         
-        console.log('📦 Blob created:', blob.size, 'bytes');
+        console.log('📦 Blob created:', blob.size, 'bytes (compressed)');
         
         // Upload to Supabase Storage using PUT method
         const uploadResponse = await fetch(
@@ -797,9 +832,13 @@ function setupEventHandlers() {
                     console.log('⚠️ Products too large for localStorage, using Supabase only');
                 }
                 
-                // Also save to IndexedDB (for large data)
-                await saveProductsToIndexedDB(products);
-                console.log('✅ Saved to IndexedDB');
+                // Also save to IndexedDB (for large data) - optional, don't block on error
+                try {
+                    await saveProductsToIndexedDB(products);
+                    console.log('✅ Saved to IndexedDB');
+                } catch (e) {
+                    console.warn('⚠️ IndexedDB save failed (optional):', e);
+                }
                 
                 // Notify other tabs via BroadcastChannel
                 if (window.productsBroadcastChannel) {
@@ -1170,59 +1209,76 @@ for (let i = 1; i <= 3; i++) {
 // Load settings on page load
 const savedSettings = JSON.parse(localStorage.getItem('storeSettings') || '{}');
 if (savedSettings.storeName) {
-    document.getElementById('storeName').value = savedSettings.storeName;
+    const el = document.getElementById('storeName');
+    if (el) el.value = savedSettings.storeName;
 }
 if (savedSettings.storePhone) {
-    document.getElementById('storePhone').value = savedSettings.storePhone;
+    const el = document.getElementById('storePhone');
+    if (el) el.value = savedSettings.storePhone;
 }
 if (savedSettings.heroTitle) {
-    document.getElementById('heroTitle').value = savedSettings.heroTitle;
+    const el = document.getElementById('heroTitle');
+    if (el) el.value = savedSettings.heroTitle;
 }
 if (savedSettings.heroSubtitle) {
-    document.getElementById('heroSubtitle').value = savedSettings.heroSubtitle;
+    const el = document.getElementById('heroSubtitle');
+    if (el) el.value = savedSettings.heroSubtitle;
 }
 if (savedSettings.benefit1) {
-    document.getElementById('benefit1').value = savedSettings.benefit1;
+    const el = document.getElementById('benefit1');
+    if (el) el.value = savedSettings.benefit1;
 }
 if (savedSettings.benefit2) {
-    document.getElementById('benefit2').value = savedSettings.benefit2;
+    const el = document.getElementById('benefit2');
+    if (el) el.value = savedSettings.benefit2;
 }
 if (savedSettings.benefit3) {
-    document.getElementById('benefit3').value = savedSettings.benefit3;
+    const el = document.getElementById('benefit3');
+    if (el) el.value = savedSettings.benefit3;
 }
 if (savedSettings.benefit4) {
-    document.getElementById('benefit4').value = savedSettings.benefit4;
+    const el = document.getElementById('benefit4');
+    if (el) el.value = savedSettings.benefit4;
 }
 
 // Hero buttons & trust
 if (savedSettings.heroBtn1) {
-    document.getElementById('heroBtn1').value = savedSettings.heroBtn1;
+    const el = document.getElementById('heroBtn1');
+    if (el) el.value = savedSettings.heroBtn1;
 }
 if (savedSettings.heroBtn2) {
-    document.getElementById('heroBtn2').value = savedSettings.heroBtn2;
+    const el = document.getElementById('heroBtn2');
+    if (el) el.value = savedSettings.heroBtn2;
 }
 if (savedSettings.heroTrust1) {
-    document.getElementById('heroTrust1').value = savedSettings.heroTrust1;
+    const el = document.getElementById('heroTrust1');
+    if (el) el.value = savedSettings.heroTrust1;
 }
 if (savedSettings.heroTrust2) {
-    document.getElementById('heroTrust2').value = savedSettings.heroTrust2;
+    const el = document.getElementById('heroTrust2');
+    if (el) el.value = savedSettings.heroTrust2;
 }
 if (savedSettings.heroTrust3) {
-    document.getElementById('heroTrust3').value = savedSettings.heroTrust3;
+    const el = document.getElementById('heroTrust3');
+    if (el) el.value = savedSettings.heroTrust3;
 }
 
 // Benefit descriptions
 if (savedSettings.benefitDesc1) {
-    document.getElementById('benefitDesc1').value = savedSettings.benefitDesc1;
+    const el = document.getElementById('benefitDesc1');
+    if (el) el.value = savedSettings.benefitDesc1;
 }
 if (savedSettings.benefitDesc2) {
-    document.getElementById('benefitDesc2').value = savedSettings.benefitDesc2;
+    const el = document.getElementById('benefitDesc2');
+    if (el) el.value = savedSettings.benefitDesc2;
 }
 if (savedSettings.benefitDesc3) {
-    document.getElementById('benefitDesc3').value = savedSettings.benefitDesc3;
+    const el = document.getElementById('benefitDesc3');
+    if (el) el.value = savedSettings.benefitDesc3;
 }
 if (savedSettings.benefitDesc4) {
-    document.getElementById('benefitDesc4').value = savedSettings.benefitDesc4;
+    const el = document.getElementById('benefitDesc4');
+    if (el) el.value = savedSettings.benefitDesc4;
 }
 
 // Benefit icons - update hidden inputs and preview icons
