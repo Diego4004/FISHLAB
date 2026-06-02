@@ -4,6 +4,46 @@
 const SUPABASE_URL = 'https://rxcgyreenwlfhqpvbsfh.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4Y2d5cmVlbndsZmhxcHZic2ZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMjI0NTksImV4cCI6MjA5NTg5ODQ1OX0.UsbpDbWzhQ5fC5ZJBYzXu7wY2OCI4U4SgUipWv8gxWY';
 
+// Upload image to Supabase Storage and get public URL
+async function uploadImageToSupabase(base64Image, filename) {
+    try {
+        if (!base64Image || !base64Image.startsWith('data:image')) {
+            console.warn('Invalid image format');
+            return null;
+        }
+        
+        // Convert base64 to blob
+        const response = await fetch(base64Image);
+        const blob = await response.blob();
+        
+        // Upload to Supabase Storage
+        const uploadResponse = await fetch(
+            `${SUPABASE_URL}/storage/v1/object/product-images/${filename}`,
+            {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                },
+                body: blob
+            }
+        );
+        
+        if (uploadResponse.ok) {
+            // Get public URL
+            const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/product-images/${filename}`;
+            console.log('✅ Image uploaded:', publicUrl);
+            return publicUrl;
+        } else {
+            console.warn('Upload error:', uploadResponse.status);
+            return null;
+        }
+    } catch (e) {
+        console.error('Error uploading image:', e);
+        return null;
+    }
+}
+
 // Supabase API helper
 const supabaseAPI = {
     async saveProduct(product) {
@@ -632,7 +672,8 @@ function setupEventHandlers() {
             const priceFrom = parseInt(document.getElementById('productPriceFrom').value);
             const priceTo = parseInt(document.getElementById('productPriceTo').value);
             
-            const productData = {
+            // For Supabase: store only essential data (no base64 images)
+            const productDataSupabase = {
                 id: productId ? parseInt(productId) : Math.max(...products.map(p => p.id), 0) + 1,
                 name: document.getElementById('productName').value,
                 category: document.getElementById('productCategory').value,
@@ -640,10 +681,15 @@ function setupEventHandlers() {
                 priceTo: priceTo,
                 price: priceFrom,
                 description: document.getElementById('productDescription').value,
-                images: productImages,
                 image: productImages[0] || '',
                 icon: '🐟',
                 inStock: document.getElementById('productInStock').checked
+            };
+            
+            // Local version with all images (for local storage)
+            const productData = {
+                ...productDataSupabase,
+                images: productImages
             };
             
             if (productId) {
@@ -658,17 +704,52 @@ function setupEventHandlers() {
                 products.push(productData);
             }
             
-            console.log('Saving product:', productData);
+            console.log('Saving product:', productDataSupabase);
             
             // Save to Supabase and localStorage with error handling
             try {
+                // Upload main image if it's base64
+                if (currentMainImageBase64 && currentMainImageBase64.startsWith('data:image')) {
+                    console.log('📤 Uploading main image...');
+                    const timestamp = Date.now();
+                    const mainImageUrl = await uploadImageToSupabase(
+                        currentMainImageBase64,
+                        `product-${productDataSupabase.id}-main-${timestamp}`
+                    );
+                    if (mainImageUrl) {
+                        productDataSupabase.image = mainImageUrl;
+                    }
+                }
+                
+                // Upload additional images if they're base64
+                if (currentAdditionalImagesBase64.length > 0) {
+                    console.log('📤 Uploading additional images...');
+                    const uploadedImages = [];
+                    for (let i = 0; i < currentAdditionalImagesBase64.length; i++) {
+                        const img = currentAdditionalImagesBase64[i];
+                        if (img.startsWith('data:image')) {
+                            const timestamp = Date.now();
+                            const imgUrl = await uploadImageToSupabase(
+                                img,
+                                `product-${productDataSupabase.id}-img-${i}-${timestamp}`
+                            );
+                            if (imgUrl) uploadedImages.push(imgUrl);
+                        } else {
+                            uploadedImages.push(img); // Already a URL
+                        }
+                    }
+                    if (uploadedImages.length > 0) {
+                        productDataSupabase.images = uploadedImages;
+                    }
+                }
+                
                 // Save to Supabase
                 if (productId) {
                     // Update existing product
-                    await supabaseAPI.updateProduct(parseInt(productId), productData);
+                    await supabaseAPI.updateProduct(parseInt(productId), productDataSupabase);
                 } else {
                     // Save new product
-                    await supabaseAPI.saveProduct(productData);
+                    await supabaseAPI.saveProduct(productDataSupabase);
                 }
                 console.log('✅ Saved to Supabase');
                 
