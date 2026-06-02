@@ -1,5 +1,103 @@
 // Admin Panel JavaScript
 
+// Supabase Configuration
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://rxcgyreenwlfhqpvbsfh.supabase.co';
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4Y2d5cmVlbndsZmhxcHZic2ZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMjI0NTksImV4cCI6MjA5NTg5ODQ1OX0.UsbpDbWzhQ5fC5ZJBYzXu7wY2OCI4U4SgUipWv8gxWY';
+
+// Supabase API helper
+const supabaseAPI = {
+    async saveProduct(product) {
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(product)
+            });
+            if (!response.ok) {
+                console.warn('Error saving product:', response.status);
+                return null;
+            }
+            const data = await response.json();
+            console.log('✅ Product saved to Supabase');
+            return data[0];
+        } catch (e) {
+            console.warn('Error saving product to Supabase:', e);
+            return null;
+        }
+    },
+    
+    async updateProduct(id, product) {
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(product)
+            });
+            if (!response.ok) {
+                console.warn('Error updating product:', response.status);
+                return null;
+            }
+            console.log('✅ Product updated in Supabase');
+            return true;
+        } catch (e) {
+            console.warn('Error updating product in Supabase:', e);
+            return null;
+        }
+    },
+    
+    async deleteProduct(id) {
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
+            });
+            if (!response.ok) {
+                console.warn('Error deleting product:', response.status);
+                return null;
+            }
+            console.log('✅ Product deleted from Supabase');
+            return true;
+        } catch (e) {
+            console.warn('Error deleting product from Supabase:', e);
+            return null;
+        }
+    },
+    
+    async saveSettings(settings) {
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/settings`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            });
+            if (!response.ok) {
+                console.warn('Error saving settings:', response.status);
+                return null;
+            }
+            console.log('✅ Settings saved to Supabase');
+            return true;
+        } catch (e) {
+            console.warn('Error saving settings to Supabase:', e);
+            return null;
+        }
+    }
+};
+
 // IndexedDB helper for storing large images
 const DB_NAME = 'RibakStore';
 const DB_VERSION = 1;
@@ -117,9 +215,43 @@ const _auth = {
 };
 const checkAuth = (login, pass) => login === _auth.l && pass === _auth.p;
 
-// Products array - start empty or load from localStorage
-// NOTE: Removed default products to prevent them reappearing after deletion
-let products = JSON.parse(localStorage.getItem('adminProducts')) || [];
+// Products array - will be loaded from Supabase or localStorage
+let products = [];
+
+// Initialize products from Supabase or localStorage
+async function initializeAdminProducts() {
+    try {
+        // Try to load from Supabase first
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*`, {
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const supabaseProducts = await response.json();
+            if (supabaseProducts && supabaseProducts.length > 0) {
+                products = supabaseProducts;
+                console.log('✅ Products loaded from Supabase:', products.length);
+                // Save to localStorage as backup
+                try {
+                    localStorage.setItem('adminProducts', JSON.stringify(products));
+                } catch (e) {
+                    console.warn('localStorage full');
+                }
+                return;
+            }
+        }
+    } catch (e) {
+        console.warn('Error loading from Supabase:', e);
+    }
+    
+    // Fallback to localStorage
+    products = JSON.parse(localStorage.getItem('adminProducts')) || [];
+    console.log('✅ Products loaded from localStorage:', products.length);
+}
 
 // DOM Elements
 const loginScreen = document.getElementById('loginScreen');
@@ -176,9 +308,12 @@ logoutBtn.addEventListener('click', () => {
 });
 
 // Show dashboard
-function showDashboard() {
+async function showDashboard() {
     loginScreen.style.display = 'none';
     adminDashboard.style.display = 'flex';
+    
+    // Load products from Supabase
+    await initializeAdminProducts();
     loadProductsTable();
     
     // Load admin nickname
@@ -266,6 +401,48 @@ sidebarLinks.forEach(link => {
         }
     });
 });
+
+// Delete product
+async function deleteProduct(productId) {
+    if (!confirm('Ви впевнені, що хочете видалити цей товар?')) {
+        return;
+    }
+    
+    try {
+        // Delete from Supabase
+        await supabaseAPI.deleteProduct(productId);
+        console.log('✅ Product deleted from Supabase');
+        
+        // Remove from local array
+        products = products.filter(p => p.id !== productId);
+        
+        // Save to localStorage
+        try {
+            localStorage.setItem('adminProducts', JSON.stringify(products));
+            console.log('✅ Saved to localStorage');
+        } catch (e) {
+            console.warn('localStorage full');
+        }
+        
+        // Save to IndexedDB
+        await saveProductsToIndexedDB(products);
+        console.log('✅ Saved to IndexedDB');
+        
+        // Reload table
+        loadProductsTable();
+        
+        // Notify other tabs
+        if ('BroadcastChannel' in window) {
+            const bc = new BroadcastChannel('settings_channel');
+            bc.postMessage({ type: 'products' });
+        }
+        
+        alert('Товар видалено!');
+    } catch (e) {
+        console.error('Error deleting product:', e);
+        alert('Помилка при видаленні товару!');
+    }
+}
 
 // Load products table
 function loadProductsTable() {
@@ -569,22 +746,32 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
     
     console.log('Saving product:', productData);
     
-    // Save to localStorage and IndexedDB with error handling
+    // Save to Supabase and localStorage with error handling
     try {
+        // Save to Supabase
+        if (productId) {
+            // Update existing product
+            await supabaseAPI.updateProduct(parseInt(productId), productData);
+        } else {
+            // Save new product
+            await supabaseAPI.saveProduct(productData);
+        }
+        console.log('✅ Saved to Supabase');
+        
         const productsJSON = JSON.stringify(products);
         console.log('Products size:', productsJSON.length, 'bytes');
         
-        // Try localStorage first (for smaller data)
+        // Also save to localStorage as backup
         try {
             localStorage.setItem('adminProducts', productsJSON);
-            console.log('Saved to localStorage');
+            console.log('✅ Saved to localStorage');
         } catch (e) {
-            console.warn('localStorage full, using IndexedDB only');
+            console.warn('localStorage full, using Supabase only');
         }
         
         // Also save to IndexedDB (for large data)
         await saveProductsToIndexedDB(products);
-        console.log('Saved to IndexedDB');
+        console.log('✅ Saved to IndexedDB');
         
         // Notify other tabs via BroadcastChannel
         if ('BroadcastChannel' in window) {
@@ -637,7 +824,7 @@ document.getElementById('closeProductModal').addEventListener('click', () => {
 });
 
 // Settings
-document.getElementById('saveSettings').addEventListener('click', () => {
+document.getElementById('saveSettings').addEventListener('click', async () => {
     // Save admin nickname
     const adminNickname = document.getElementById('adminNicknameInput').value;
     if (adminNickname) {
@@ -691,16 +878,20 @@ document.getElementById('saveSettings').addEventListener('click', () => {
             delete settingsToSave.logoImage;
         }
         
+        // Save to Supabase
+        await supabaseAPI.saveSettings(settingsToSave);
+        console.log('✅ Settings saved to Supabase');
+        
         const finalJSON = JSON.stringify(settingsToSave);
         localStorage.setItem('storeSettings', finalJSON);
-        console.log('✓ Settings saved to localStorage');
+        console.log('✅ Settings saved to localStorage');
         console.log('Settings size:', finalJSON.length, 'bytes');
         
         // Notify other tabs via BroadcastChannel
         if ('BroadcastChannel' in window) {
             const bc = new BroadcastChannel('settings_channel');
             bc.postMessage({ type: 'settings' });
-            console.log('✓ BroadcastChannel message sent');
+            console.log('✅ BroadcastChannel message sent');
         } else {
             console.warn('⚠ BroadcastChannel not supported');
         }

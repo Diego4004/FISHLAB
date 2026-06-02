@@ -2,7 +2,7 @@ console.log('🚀 APP.JS LOADED');
 
 // Supabase Configuration
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://rxcgyreenwlfhqpvbsfh.supabase.co';
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || 'rxcgyreenwlfhqpvbsfh';
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4Y2d5cmVlbndsZmhxcHZic2ZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMjI0NTksImV4cCI6MjA5NTg5ODQ1OX0.UsbpDbWzhQ5fC5ZJBYzXu7wY2OCI4U4SgUipWv8gxWY';
 
 // Supabase API helper
 const supabaseAPI = {
@@ -11,10 +11,17 @@ const supabaseAPI = {
             const response = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json'
                 }
             });
-            return await response.json();
+            if (!response.ok) {
+                console.warn('Error fetching products:', response.status);
+                return JSON.parse(localStorage.getItem('adminProducts')) || [];
+            }
+            const data = await response.json();
+            console.log('✅ Products loaded from Supabase:', data.length);
+            return data;
         } catch (e) {
             console.warn('Error fetching products from Supabase:', e);
             return JSON.parse(localStorage.getItem('adminProducts')) || [];
@@ -26,10 +33,16 @@ const supabaseAPI = {
             const response = await fetch(`${SUPABASE_URL}/rest/v1/settings?select=*&limit=1`, {
                 headers: {
                     'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json'
                 }
             });
+            if (!response.ok) {
+                console.warn('Error fetching settings:', response.status);
+                return JSON.parse(localStorage.getItem('storeSettings')) || {};
+            }
             const data = await response.json();
+            console.log('✅ Settings loaded from Supabase');
             return data.length > 0 ? data[0] : JSON.parse(localStorage.getItem('storeSettings')) || {};
         } catch (e) {
             console.warn('Error fetching settings from Supabase:', e);
@@ -198,8 +211,30 @@ const defaultProducts = [
     }
 ];
 
-// Load products from admin storage or use defaults
-let products = JSON.parse(localStorage.getItem('adminProducts')) || defaultProducts;
+// Load products from Supabase or localStorage
+let products = [];
+
+// Initialize products on page load
+async function initializeProducts() {
+    try {
+        // Try to load from Supabase first
+        const supabaseProducts = await supabaseAPI.getProducts();
+        if (supabaseProducts && supabaseProducts.length > 0) {
+            products = supabaseProducts;
+            console.log('✅ Products loaded from Supabase:', products.length);
+        } else {
+            // Fallback to localStorage
+            products = JSON.parse(localStorage.getItem('adminProducts')) || defaultProducts;
+            console.log('✅ Products loaded from localStorage:', products.length);
+        }
+        renderProducts();
+        updateCategoryCounts();
+    } catch (e) {
+        console.warn('Error initializing products:', e);
+        products = JSON.parse(localStorage.getItem('adminProducts')) || defaultProducts;
+        renderProducts();
+    }
+}
 
 // Try to load from IndexedDB if available
 const DB_NAME = 'RibakStore';
@@ -1395,4 +1430,19 @@ setInterval(() => {
     // Load font settings
     loadFontSettings();
 }, 1000);
+
+// Initialize app on page load
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Initializing app...');
+    initializeProducts();
+    loadSettings();
+    loadFontSettings();
+});
+
+// Also initialize immediately if DOM is already loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeProducts);
+} else {
+    initializeProducts();
+}
 
