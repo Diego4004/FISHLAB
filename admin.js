@@ -1,8 +1,8 @@
 // Admin Panel JavaScript
 
 // Supabase Configuration
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://rxcgyreenwlfhqpvbsfh.supabase.co';
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4Y2d5cmVlbndsZmhxcHZic2ZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMjI0NTksImV4cCI6MjA5NTg5ODQ1OX0.UsbpDbWzhQ5fC5ZJBYzXu7wY2OCI4U4SgUipWv8gxWY';
+const SUPABASE_URL = 'https://rxcgyreenwlfhqpvbsfh.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4Y2d5cmVlbndsZmhxcHZic2ZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMjI0NTksImV4cCI6MjA5NTg5ODQ1OX0.UsbpDbWzhQ5fC5ZJBYzXu7wY2OCI4U4SgUipWv8gxWY';
 
 // Supabase API helper
 const supabaseAPI = {
