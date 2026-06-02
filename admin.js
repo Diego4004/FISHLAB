@@ -25,11 +25,11 @@ async function uploadImageToSupabase(base64Image, filename) {
         
         console.log('📦 Blob created:', blob.size, 'bytes');
         
-        // Upload to Supabase Storage using POST method with upsert
+        // Upload to Supabase Storage using PUT method
         const uploadResponse = await fetch(
-            `${SUPABASE_URL}/storage/v1/object/product-images/${filename}?upsert=true`,
+            `${SUPABASE_URL}/storage/v1/object/product-images/${filename}`,
             {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
                     'apikey': SUPABASE_KEY,
                     'Content-Type': mime
@@ -685,8 +685,17 @@ function setupEventHandlers() {
             const priceTo = parseInt(document.getElementById('productPriceTo').value);
             
             // For Supabase: store only essential data (no base64 images)
+            // Generate ID: if updating use existing ID, else generate new one
+            let newId;
+            if (productId) {
+                newId = parseInt(productId);
+            } else {
+                const maxId = products.length > 0 ? Math.max(...products.map(p => p.id || 0)) : 0;
+                newId = maxId + 1;
+            }
+            
             const productDataSupabase = {
-                id: productId ? parseInt(productId) : Math.max(...products.map(p => p.id), 0) + 1,
+                id: newId,
                 name: document.getElementById('productName').value,
                 category: document.getElementById('productCategory').value,
                 priceFrom: priceFrom,
@@ -699,6 +708,8 @@ function setupEventHandlers() {
             };
             
             console.log('🔄 Starting product save process...');
+            console.log('📋 Product ID:', newId);
+            console.log('📋 Product data:', productDataSupabase);
             
             // STEP 1: Upload images FIRST (before saving to database)
             try {
